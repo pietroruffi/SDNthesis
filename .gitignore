@@ -1,0 +1,12 @@
+venv
+env
+log
+__pycache__
+*.swp
+*.pem
+
+p4/*
+!p4/*.p4
+!p4/*_config.json
+
+.vscode
