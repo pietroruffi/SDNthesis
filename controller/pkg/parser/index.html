@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="it">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Parser switch P4</title>
+    <link href="./web/css/bootstrap/bootstrap.min.css" rel="stylesheet">
+    <script src="./web/js/bootstrap/bootstrap.bundle.min.js"></script>
+</head>
+
+<body>
+
+    <!--    HEADER  -->
+    <nav class="navbar navbar-expand-lg bg-light fixed-top">
+        <div class="container-fluid">
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
+                data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false"
+                aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarSupportedContent">
+                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                    <li class="nav-item">
+                        <a class="nav-link active" aria-current="page" href="#">Home</a>
+                    </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button"
+                            data-bs-toggle="dropdown" aria-expanded="false">
+                            Dropdown
+                        </a>
+                        <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
+                            <li><a class="dropdown-item" href="#">Action</a></li>
+                            <li><a class="dropdown-item" href="#">Another action</a></li>
+                            <li>
+                                <hr class="dropdown-divider">
+                            </li>
+                            <li><a class="dropdown-item" href="#">Something else here</a></li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+    <!--    FINE-HEADER   -->
+    <!--    INIZIO   -->
+    <div class="d-flex flex-column container-fluid align-items-center mt-5 mb-5">
+
+        <!--
+        <div class="alert alert-danger mt-5" role="alert" >
+            Messaggio di errore
+        </div>
+        -->
+        <!--
+        <div class="alert alert-success mt-5" role="alert" >
+            Operazione eseguita con successo
+        </div>
+        -->
+        <div class="col-12 row justify-content-center mt-5">
+            <div class="col-12 col-lg-4 col-xl-3 justify-content-center align-items-center">
+                <h2 class="mb-3">Change P4 program</h2>
+                <h2 class="mt-4"><a class="btn btn-light fs-4 p-2 w-100" style="font-weight: 500" href="#switchs1"
+                        data-bs-toggle="collapse">Switch S1</a></h2>
+                    <ul class="list-group collapse" id="switchs1">
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            simple
+                            <button class="btn btn-success rounded-pill" disabled>Executing</button>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            simple1
+                            <a href="addRule.html?id=simple1"><button class="btn btn-primary rounded-pill">Execute</button></a>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            asymmetric
+                            <a href="addRule.html?id=asymmetric"><button class="btn btn-primary rounded-pill">Execute</button></a>
+                        </li>
+                    </ul>
+                <h2 class="mt-4"><a class="btn btn-light fs-4 p-2 w-100" style="font-weight: 500" href="#switchs2"
+                        data-bs-toggle="collapse">Switch S2</a></h2>
+                <ul class="list-group collapse" id="switchs2">
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        simple
+                        <button class="btn btn-primary rounded-pill" type="submit">Execute</button>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        simple1
+                        <button class="btn btn-success rounded-pill" type="submit" disabled>Executing</button>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        asymmetric
+                        <button class="btn btn-primary rounded-pill" type="submit">Execute</button>
+                    </li>
+                </ul>
+                <h2 class="mt-4"><a class="btn btn-light fs-4 p-2 w-100" style="font-weight: 500" href="#switchs3"
+                        data-bs-toggle="collapse">Switch S3</a></h2>
+                <ul class="list-group collapse" id="switchs3">
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        simple
+                        <button class="btn btn-primary rounded-pill" type="submit">Execute</button>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        simple1
+                        <button class="btn btn-success rounded-pill" type="submit" disabled>Executing</button>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        asymmetric
+                        <button class="btn btn-primary rounded-pill" type="submit">Execute</button>
+                    </li>
+                </ul>
+            </div>
+            <div class="col-12 col-sm-6 col-lg-4 col-xl-3 mt-5 mt-lg-0 align-items-center">
+
+                <h2 class="mb-3">Install new rules</h2>
+
+                <h2 class="mt-4">
+                    <a class="btn btn-light fs-4 p-2 w-100" style="font-weight: 500" href="#switchs1Rule"
+                        data-bs-toggle="collapse">Switch S1</a>
+                </h2>
+                <div class="list-group collapse" id="switchs1Rule">
+                    <div class="accordion" id="accordionExample1">
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" id="heading1">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                                    data-bs-target="#collapse1" aria-expanded="false" aria-controls="collapse1">
+                                    MyIngress.ipv4_forward
+                                </button>
+                            </h2>
+                            <div id="collapse1" class="accordion-collapse collapse" aria-labelledby="heading1"
+                                data-bs-parent="#accordionExample1">
+                                <div class="accordion-body">
+                                    <strong>Table</strong><br>
+                                    <ul>
+                                        <li>
+                                            MyIngress.ipv4_lpm
+                                        </li>
+                                    </ul>
+                                    <strong>Key</strong><br>
+                                    <ul>
+                                        <li>
+                                            hdr.ipv4.dstAddr (bit&lt;32&gt;), match_type: LMP
+                                        </li>
+                                    </ul>
+                                    <strong>Parameters</strong><br>
+                                    <ul>
+                                        <li>
+                                            dstAddr (bit&lt;48&gt;)
+                                        </li>
+                                        <li>
+                                            port (bit&lt;9&gt;)
+                                        </li>
+                                    </ul>
+                                    <a href="addRule.html?switch=s1&idTable=0&idRule=0"><button class="btn btn-primary rounded-pill" type="submit">Add new rule</button></a>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" id="heading2">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                                    data-bs-target="#collapse2" aria-expanded="false" aria-controls="collapse2">
+                                    MyIngress.drop
+                                </button>
+                            </h2>
+                            <div id="collapse2" class="accordion-collapse collapse " aria-labelledby="heading2"
+                                data-bs-parent="#accordionExample1">
+                                <div class="accordion-body">
+                                    <strong>Table</strong><br>
+                                    <ul>
+                                        <li>
+                                            MyIngress.ipv4_lpm
+                                        </li>
+                                    </ul>
+                                    <strong>Key</strong><br>
+                                    <ul>
+                                        <li>
+                                            hdr.ipv4.dstAddr (bit&lt;32&gt;), match_type: LMP
+                                        </li>
+                                    </ul>
+                                    <strong>No parameter required</strong><br><br>
+
+                                    <a href="addRule.html?switch=s1&idTable=0&idRule=1"><button class="btn btn-primary rounded-pill" type="submit">Add new rule</button></a>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" id="heading3">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                                    data-bs-target="#collapse3" aria-expanded="false" aria-controls="collapse3">
+                                    MyIngress.send_digest
+                                </button>
+                            </h2>
+                            <div id="collapse3" class="accordion-collapse collapse" aria-labelledby="heading3"
+                                data-bs-parent="#accordionExample1">
+                                <div class="accordion-body">
+                                    <strong>Table</strong><br>
+                                    <ul>
+                                        <li>
+                                            MyIngress.ipv4_lpm
+                                        </li>
+                                    </ul>
+                                    <strong>Key</strong><br>
+                                    <ul>
+                                        <li>
+                                            hdr.ipv4.dstAddr (bit&lt;32&gt;), match_type: LMP
+                                        </li>
+                                    </ul>
+                                    <strong>No parameter required</strong><br><br>
+                                    <a href="addRule.html?switch=s1&idTable=0&idRule=2"><button class="btn btn-primary rounded-pill" type="submit">Add new rule</button></a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <h2 class="mt-4">
+                    <a class="btn btn-light fs-4 p-2 w-100" style="font-weight: 500" href="#switchs2Rule"
+                        data-bs-toggle="collapse">Switch S2</a>
+                </h2>
+                <div class="list-group collapse" id="switchs2Rule">
+                    <div class="accordion" id="accordionExample2">
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" id="heading4">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                                    data-bs-target="#collapse4" aria-expanded="false" aria-controls="collapse4">
+                                    MyIngress.ipv4_forward
+                                </button>
+                            </h2>
+                            <div id="collapse4" class="accordion-collapse collapse" aria-labelledby="heading4"
+                                data-bs-parent="#accordionExample2">
+                                <div class="accordion-body">
+                                    <strong>Table</strong><br>
+                                    <ul>
+                                        <li>
+                                            MyIngress.ipv4_lpm1
+                                        </li>
+                                    </ul>
+                                    <strong>Key</strong><br>
+                                    <ul>
+                                        <li>
+                                            hdr.ipv4.dstAddr (bit&lt;32&gt;), match_type: LMP
+                                        </li>
+                                    </ul>
+                                    <strong>Parameters</strong><br>
+                                    <ul>
+                                        <li>
+                                            dstAddr (bit&lt;48&gt;)
+                                        </li>
+                                        <li>
+                                            port (bit&lt;9&gt;)
+                                        </li>
+                                    </ul>
+                                    <a href="addRule.html?switch=s2&idTable=0&idRule=0"><button class="btn btn-primary rounded-pill" type="submit">Add new rule</button></a>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" id="heading5">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                                    data-bs-target="#collapse5" aria-expanded="false" aria-controls="collapse5">
+                                    MyIngress.drop
+                                </button>
+                            </h2>
+                            <div id="collapse5" class="accordion-collapse collapse" aria-labelledby="heading5"
+                                data-bs-parent="#accordionExample2">
+                                <div class="accordion-body">
+                                    <strong>Table</strong><br>
+                                    <ul>
+                                        <li>
+                                            MyIngress.ipv4_lpm1
+                                        </li>
+                                    </ul>
+                                    <strong>Key</strong><br>
+                                    <ul>
+                                        <li>
+                                            hdr.ipv4.dstAddr (bit&lt;32&gt;), match_type: LMP
+                                        </li>
+                                    </ul>
+                                    <strong>No parameter required</strong><br><br>
+                                    <a href="addRule.html?switch=s2&idTable=0&idRule=1"><button class="btn btn-primary rounded-pill" type="submit">Add new rule</button></a>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" id="heading6">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                                    data-bs-target="#collapse6" aria-expanded="false" aria-controls="collapse6">
+                                    MyIngress.send_digest
+                                </button>
+                            </h2>
+                            <div id="collapse6" class="accordion-collapse collapse" aria-labelledby="heading6"
+                                data-bs-parent="#accordionExample2">
+                                <div class="accordion-body">
+                                    <strong>Table</strong><br>
+                                    <ul>
+                                        <li>
+                                            MyIngress.ipv4_lpm1
+                                        </li>
+                                    </ul>
+                                    <strong>Key</strong><br>
+                                    <ul>
+                                        <li>
+                                            hdr.ipv4.dstAddr (bit&lt;32&gt;), match_type: LMP
+                                        </li>
+                                    </ul>
+                                    <strong>No parameter required</strong><br><br>
+                                    <a href="addRule.html?switch=s2&idTable=0&idRule=2"><button class="btn btn-primary rounded-pill" type="submit">Add new rule</button></a>
+                                </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+        <!--    FINE    -->
+</body>
+
+</html>

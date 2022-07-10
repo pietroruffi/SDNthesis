@@ -2,8 +2,10 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
+	"net/http"
 	"os"
 	"strings"
 )
@@ -41,14 +43,27 @@ const (
 )
 
 func main() {
+	http.HandleFunc("/", getRoot)
+	//http.HandleFunc("/hello", getHello)
+	http.Handle("/web/", http.StripPrefix("/web/", http.FileServer(http.Dir("web"))))
 
+	err := http.ListenAndServe(":3333", nil)
+	if errors.Is(err, http.ErrServerClosed) {
+		fmt.Printf("server closed\n")
+	} else if err != nil {
+		fmt.Printf("error starting server: %s\n", err)
+		os.Exit(1)
+	}
+}
+
+func getActions() []Action {
 	filename := path + p4Program + ext
 
 	jsonFile, err := os.Open(filename)
 
 	if err != nil {
 		fmt.Println(err)
-		return
+		return nil
 	}
 	fmt.Print("[DEBUG] Successfully Opened ", filename, "\n\n")
 
@@ -160,7 +175,28 @@ func main() {
 	for ac := range actions {
 		fmt.Println("[DEBUG-ACTIONS]", actions[ac])
 	}
+	return actions
+}
 
+func getRoot(w http.ResponseWriter, r *http.Request) {
+	fmt.Printf("got / request\n")
+	/*p := &Page{Title: title}
+	err := templates.ExecuteTemplate(w, "index.html", p)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}*/
+	jsonFile, err := os.Open("index.html")
+
+	if err != nil {
+		fmt.Println(err)
+	}
+	fmt.Print("[DEBUG] Successfully Opened index.html", "\n\n")
+
+	defer jsonFile.Close()
+
+	byteValue, _ := ioutil.ReadAll(jsonFile)
+
+	fmt.Fprintf(w, string(byteValue))
 }
 
 func integer_contains(array []int, content int) bool {
