@@ -5,27 +5,28 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"strings"
 )
 
 type Table struct {
-	Id      int
-	Name    string
-	Keys    []Key
-	Actions []Action
+	Id         int
+	Name       string
+	Keys       []Key
+	ActionsIds []int
 }
 
 type Key struct {
-	Name   string
-	Match  string
-	Mask   string
-	Target []string
+	Name  string
+	Match string
+	//Target []string
+	Mask string
 }
 
 type Action struct {
+	Table      Table
 	Id         int
 	Name       string
 	Parameters []Parameter
-	//  Table      Table (mettere ?)
 }
 
 type Parameter struct {
@@ -33,9 +34,15 @@ type Parameter struct {
 	Bitwidth int
 }
 
+const (
+	path      = "../../../p4/"
+	p4Program = "asymmetric"
+	ext       = ".json"
+)
+
 func main() {
 
-	filename := "../../../p4/simple.json"
+	filename := path + p4Program + ext
 	// Open our jsonFile
 	jsonFile, err := os.Open(filename)
 	// if we os.Open returns an error then handle it
@@ -54,16 +61,55 @@ func main() {
 
 	// Extract tables informations
 
+	var tables []Table
 	for i := range result["pipelines"].([]interface{}) {
 		a := ((result["pipelines"].([]interface{})[i]).(map[string]interface{}))["tables"]
 
 		for k := range a.([]interface{}) {
 			b := a.([]interface{})[k].(map[string]interface{})
-			fmt.Println(b["id"], b["name"], b["key"], b["action_ids"], b["actions"])
+
+			if strings.HasPrefix(b["name"].(string), "tbl_"+p4Program) {
+				continue
+			}
+
+			//fmt.Println(b["id"], b["name"], b["key"], b["action_ids"], b["actions"])
+			id := b["id"].(float64)
+
+			var keys []Key
+
+			for kk := range b["key"].([]interface{}) {
+				c := b["key"].([]interface{})[kk].(map[string]interface{})
+
+				var mask string
+				if c["mask"] != nil {
+					mask = c["mask"].(string)
+				}
+
+				keys = append(keys, Key{
+					Name:  c["name"].(string),
+					Match: c["match_type"].(string),
+					//Target: c["target"].([]string),
+					Mask: mask,
+				})
+			}
+
+			var action_ids []int
+			for ii := range b["action_ids"].([]interface{}) {
+				action_ids = append(action_ids, int(b["action_ids"].([]interface{})[ii].(float64)))
+			}
+
+			tables = append(tables, Table{
+				Id:         int(id),
+				Name:       b["name"].(string),
+				Keys:       keys,
+				ActionsIds: action_ids,
+			})
+
 		}
 
 	}
 
+	fmt.Println(tables)
 	fmt.Print("\n")
 
 	// Extract actions informations
