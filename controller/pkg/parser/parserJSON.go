@@ -18,7 +18,7 @@ type Table struct {
 type Key struct {
 	Name  string
 	Match string
-	//Target []string
+	//Target []string // add? useful?
 	Mask string
 }
 
@@ -43,15 +43,15 @@ const (
 func main() {
 
 	filename := path + p4Program + ext
-	// Open our jsonFile
+
 	jsonFile, err := os.Open(filename)
-	// if we os.Open returns an error then handle it
+
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
-	fmt.Print("Successfully Opened", filename, "\n\n")
-	// defer the closing of our jsonFile so that we can parse it later on
+	fmt.Print("[DEBUG] Successfully Opened ", filename, "\n\n")
+
 	defer jsonFile.Close()
 
 	byteValue, _ := ioutil.ReadAll(jsonFile)
@@ -62,64 +62,112 @@ func main() {
 	// Extract tables informations
 
 	var tables []Table
+
 	for i := range result["pipelines"].([]interface{}) {
-		a := ((result["pipelines"].([]interface{})[i]).(map[string]interface{}))["tables"]
 
-		for k := range a.([]interface{}) {
-			b := a.([]interface{})[k].(map[string]interface{})
+		all_tables := ((result["pipelines"].([]interface{})[i]).(map[string]interface{}))["tables"]
 
-			if strings.HasPrefix(b["name"].(string), "tbl_"+p4Program) {
+		for index_tables := range all_tables.([]interface{}) {
+
+			table := all_tables.([]interface{})[index_tables].(map[string]interface{})
+
+			// doesn't consider default tables (ones which starts with tbl_nameP4Program)
+			if strings.HasPrefix(table["name"].(string), "tbl_"+p4Program) {
 				continue
 			}
 
-			//fmt.Println(b["id"], b["name"], b["key"], b["action_ids"], b["actions"])
-			id := b["id"].(float64)
+			var talbe_keys []Key
 
-			var keys []Key
+			for index_keys := range table["key"].([]interface{}) {
 
-			for kk := range b["key"].([]interface{}) {
-				c := b["key"].([]interface{})[kk].(map[string]interface{})
+				key := table["key"].([]interface{})[index_keys].(map[string]interface{})
 
+				// mask can either be present or not
 				var mask string
-				if c["mask"] != nil {
-					mask = c["mask"].(string)
+				if key["mask"] != nil {
+					mask = key["mask"].(string)
 				}
 
-				keys = append(keys, Key{
-					Name:  c["name"].(string),
-					Match: c["match_type"].(string),
-					//Target: c["target"].([]string),
+				talbe_keys = append(talbe_keys, Key{
+					Name:  key["name"].(string),
+					Match: key["match_type"].(string),
+					//Target: c["target"].([]string), // add? useful?
 					Mask: mask,
 				})
 			}
 
-			var action_ids []int
-			for ii := range b["action_ids"].([]interface{}) {
-				action_ids = append(action_ids, int(b["action_ids"].([]interface{})[ii].(float64)))
+			var actions_ids []int
+			for _, action_id := range table["action_ids"].([]interface{}) {
+				actions_ids = append(actions_ids, int(action_id.(float64)))
 			}
 
 			tables = append(tables, Table{
-				Id:         int(id),
-				Name:       b["name"].(string),
-				Keys:       keys,
-				ActionsIds: action_ids,
+				Id:         int(table["id"].(float64)),
+				Name:       table["name"].(string),
+				Keys:       talbe_keys,
+				ActionsIds: actions_ids,
 			})
 
 		}
 
 	}
-
-	fmt.Println(tables)
+	for _, ta := range tables {
+		fmt.Println("[DEBUG-TABLES]", ta)
+	}
 	fmt.Print("\n")
 
 	// Extract actions informations
 
-	for i := range result["actions"].([]interface{}) {
-		a := (result["actions"].([]interface{})[i]).(map[string]interface{})
-		fmt.Println(a["id"], a["name"])
-		for k := range a["runtime_data"].([]interface{}) {
-			fmt.Println("\t", a["runtime_data"].([]interface{})[k])
+	var actions []Action
+
+	for index_actions := range result["actions"].([]interface{}) {
+
+		action := (result["actions"].([]interface{})[index_actions]).(map[string]interface{})
+
+		// doesn't consider default tables (ones which starts with nameP4Program)
+		if strings.HasPrefix(action["name"].(string), p4Program) {
+			continue
 		}
+
+		var action_parameters []Parameter
+
+		for index_parameters := range action["runtime_data"].([]interface{}) {
+			parameter := action["runtime_data"].([]interface{})[index_parameters].(map[string]interface{})
+
+			action_parameters = append(action_parameters, Parameter{
+				Name:     parameter["name"].(string),
+				Bitwidth: int(parameter["bitwidth"].(float64)),
+			})
+		}
+		id_action := int(action["id"].(float64))
+
+		// find table which contains actual action
+		var action_table Table
+		for _, tab := range tables {
+			if integer_contains(tab.ActionsIds, id_action) {
+				action_table = tab
+				break
+			}
+		}
+
+		actions = append(actions, Action{
+			Table:      action_table,
+			Id:         id_action,
+			Name:       action["name"].(string),
+			Parameters: action_parameters,
+		})
+	}
+	for ac := range actions {
+		fmt.Println("[DEBUG-ACTIONS]", actions[ac])
 	}
 
+}
+
+func integer_contains(array []int, content int) bool {
+	for _, el := range array {
+		if el == content {
+			return true
+		}
+	}
+	return false
 }
