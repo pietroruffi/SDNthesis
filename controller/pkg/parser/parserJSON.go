@@ -205,69 +205,90 @@ func getRoot(w http.ResponseWriter, r *http.Request) {
 
 	fmt.Fprintf(w, "<div class='d-flex flex-column container-fluid align-items-center mt-5 mb-5'>\n")
 
-	// Eventuale messaggio di errore
+	// Eventual error message
 	if errorMessage != "" {
 		fmt.Fprintf(w, "<div class='alert alert-danger mt-5' role='alert'>%s</div>", errorMessage)
 		errorMessage = ""
 	}
 	//
 
-	// Eventuale messaggio di successo
+	// Eventual success message
 	if successMessage != "" {
 		fmt.Fprintf(w, "<div class='alert alert-success mt-5' role='alert'>%s</div>", successMessage)
 		successMessage = ""
 	}
 
+	// some <div> for better graphic ...
 	fmt.Fprintf(w, "<div class='col-12 row justify-content-center mt-5'>\n")
 	fmt.Fprintf(w, "<div class='col-12 col-lg-4 col-xl-3 justify-content-center align-items-center'>\n")
+
+	// Part of web page where user can change the P4 program in execution on every switch
 	fmt.Fprintf(w, "<h2 class='mb-3'>Change P4 program</h2>\n")
 
+	// TO-DO read which program is actually in execution of every switch
 	programOnSwitches := [3]string{"simple", "simple", "asymmetric"}
 
-	// Ora inizia la parte da ripetere per ogni switch, per quanto riguarda l'esecuzione dei programmi
+	// TO-DO read all available programs
 	programs := [3]string{"simple", "simple1", "asymmetric"}
+
+	// TO-DO change this for-loop for every switch
 	for sw := 1; sw <= 3; sw++ {
+		// print button where user can choose the switch
 		fmt.Fprintf(w, "<h2 class='mt-4'><a class='btn btn-light fs-4 p-2 w-100' style='font-weight: 500' href='#switchS%dExec' data-bs-toggle='collapse'>Switch S%d</a></h2>\n", sw, sw)
+		// print content of swich, i.e. programs in execution and which can be executed
 		fmt.Fprintf(w, "<ul class='list-group collapse' id='switchS%dExec'>\n", sw)
 		for _, prog := range programs {
 			if prog == programOnSwitches[sw-1] {
+				// if the program is in execution, the button Execute is disabled
 				fmt.Fprintf(w, "<li class='list-group-item d-flex justify-content-between align-items-center'>%s\n", prog)
 				fmt.Fprintf(w, "<button class='btn btn-success rounded-pill' disabled> Executing </button>\n</li>")
 			} else {
 				fmt.Fprintf(w, "<li class='list-group-item d-flex justify-content-between align-items-center'>%s\n", prog)
-				fmt.Fprintf(w, "<a href='executeProgram?sw=s%d&pr=%s'><button class='btn btn-primary rounded-pill'> Execute </button></a>\n</li>", sw, prog)
+				fmt.Fprintf(w, "<a href='executeProgram?switch=s%d&program=%s'><button class='btn btn-primary rounded-pill'> Execute </button></a>\n</li>", sw, prog)
 			}
 		}
 		fmt.Fprintf(w, "</ul>\n")
 	}
 	fmt.Fprintf(w, "</div>\n")
 	fmt.Fprintf(w, "<div class='col-12 col-sm-6 col-lg-4 col-xl-3 mt-5 mt-lg-0 align-items-center'>\n")
+
+	// Part of web page where user can add new rules (actions) on every switch
 	fmt.Fprintf(w, "<h2 class='mb-3'>Install new rules</h2>\n")
 
-	// Ora inizia la parte da ripetere per ogni switch, per quanto riguarda l'inserimento di regole
+	// TO-DO change this for-loop for every switch
 	for sw := 1; sw <= 3; sw++ {
+		// print button where user can choose the switch
 		fmt.Fprintf(w, "<h2 class='mt-4'> <a class='btn btn-light fs-4 p-2 w-100' style='font-weight: 500' href='#switchS%dRule' data-bs-toggle='collapse'>Switch S%d</a> </h2>\n", sw, sw)
+
 		fmt.Fprintf(w, "<div class='list-group collapse' id='switchS%dRule'>\n", sw)
 		fmt.Fprintf(w, "<div class='accordion' id='accordionSwitchS%d'>\n", sw)
 
-		for n, rule := range getActions(programOnSwitches[sw-1]) {
+		// print actions information, for every action inside the P4 program actually executing on switch
+		for index_rule, rule := range getActions(programOnSwitches[sw-1]) {
 
+			// beginning of new action
 			fmt.Fprintf(w, "<div class='accordion-item'>")
-			fmt.Fprintf(w, "<h2 class='accordion-header' id='headingS%dRule%d'>\n", sw, n)
-			fmt.Fprintf(w, "<button class='accordion-button collapsed' type='button' data-bs-toggle='collapse' data-bs-target='#collapseS%dRule%d' aria-expanded='false' aria-controls='collapseS%dRule%d'>%s</button>\n", sw, n, sw, n, rule.Name)
+			// button (actually is a button inside a h2 title) where user can choose to see informations of action
+			fmt.Fprintf(w, "<h2 class='accordion-header' id='headingS%dRule%d'>\n", sw, index_rule)
+			fmt.Fprintf(w, "<button class='accordion-button collapsed' type='button' data-bs-toggle='collapse' data-bs-target='#collapseS%dRule%d' aria-expanded='false' aria-controls='collapseS%dRule%d'>%s</button>\n", sw, index_rule, sw, index_rule, rule.Name)
 			fmt.Fprintf(w, "</h2>\n")
-			fmt.Fprintf(w, "<div id='collapseS%dRule%d' class='accordion-collapse collapse' aria-labelledby='headingS%dRule%d' data-bs-parent='#accordionSwitchS%d'>\n<div class='accordion-body'>\n", sw, n, sw, n, sw)
 
+			// informations inside the collapsed <div>
+			fmt.Fprintf(w, "<div id='collapseS%dRule%d' class='accordion-collapse collapse' aria-labelledby='headingS%dRule%d' data-bs-parent='#accordionSwitchS%d'>\n<div class='accordion-body'>\n", sw, index_rule, sw, index_rule, sw)
+
+			// Table name
 			fmt.Fprintf(w, "<strong>Table</strong><br>\n")
 			fmt.Fprintf(w, "<ul><li>%s</li></ul>\n", rule.Table.Name)
 
+			// Keys of table
 			fmt.Fprintf(w, "<strong>Key</strong><br>\n<ul>\n")
 
 			for _, key := range rule.Table.Keys {
 				fmt.Fprintf(w, "<li>%s (bit&lt;%d&gt;), match: %s</li>\n", key.Name, key.Bitwidth, key.Match)
 			}
-
 			fmt.Fprintf(w, "</ul>")
+
+			// Parameters of action, if none print: "No parameter required"
 			if len(rule.Parameters) > 0 {
 				fmt.Fprintf(w, "<strong>Parameters</strong><br>\n<ul>\n")
 				for _, par := range rule.Parameters {
@@ -277,6 +298,8 @@ func getRoot(w http.ResponseWriter, r *http.Request) {
 			} else {
 				fmt.Fprintf(w, "<strong>No parameter required</strong><br><br>\n")
 			}
+
+			// button which redirects to page /addRule where user can add the action he choose
 			fmt.Fprintf(w, "<a href='addRule?switch=s%d&idRule=%d'><button class='btn btn-primary rounded-pill' type='submit'>Add new rule</button></a>", sw, rule.Id)
 			fmt.Fprintf(w, "</div> </div> </div>")
 		}
@@ -290,6 +313,7 @@ func addRule(w http.ResponseWriter, r *http.Request) {
 
 	/*
 		// Questo codice estrae le informazioni dalle POST
+
 			if err := r.ParseForm(); err != nil {
 				fmt.Fprintf(w, "ParseForm() err: %v", err)
 				return
@@ -297,6 +321,8 @@ func addRule(w http.ResponseWriter, r *http.Request) {
 			fmt.Fprintf(w, "Post from website! r.PostFrom = %v\n", r.PostForm)
 			name := r.FormValue("name")
 			address := r.FormValue("address")
+
+		// CHANGE? Una volta finito rimandare alla pagina principale? La gestisco io la POST o qualcun altro?
 	*/
 
 	sw := r.URL.Query().Get("switch")
@@ -315,48 +341,68 @@ func addRule(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, string(byteValue))
 
 	headerFile.Close()
-
+	// TO-DO: add which program is executing on switch
 	action := findActionById("simple", idRule)
 
+	// some <div> for better graphic ...
 	fmt.Fprintf(w, "<div class='d-flex flex-column container-fluid vh-100 justify-content-center align-items-center'>\n")
 	fmt.Fprintf(w, "<div class='col-4 row justify-content-center align-items-center'>\n")
 
-	fmt.Fprintf(w, "<form class='col-12 row justify-content-center' action='/addRule' method='POST'>\n")
+	// CHANGE? DON'T SANITIZE INPUT?
+	fmt.Fprintf(w, "<form class='col-12 row justify-content-center' action='/addRule?switch=%s&idRule=%d' method='POST'>\n", sw, idRule)
 
-	fmt.Fprintf(w, "<h2>Add new rule for switch %s</h2>\n", sw) //TODO add name switch
-	fmt.Fprintf(w, "<div class='mb-3'>\n <div class='mb-3 row'>\n")
+	// title
+	fmt.Fprintf(w, "<h2>Add new rule for switch %s</h2>\n", sw)
+
+	fmt.Fprintf(w, "<div class='mb-3'>\n")
+
+	// show table name in textArea not modificable
+	fmt.Fprintf(w, "<div class='mb-3 row'>\n")
 	fmt.Fprintf(w, "<label for='staticTable' class='col-sm-2 col-form-label'><strong> Table </strong></label>\n")
 	fmt.Fprintf(w, "<div class='col-sm-10'><input type='text' readonly class='form-control-plaintext' id='staticTable' value='%s'></div></div>\n", action.Table.Name)
 
+	// show action name in textArea not modificable
 	fmt.Fprintf(w, "<div class='mb-3 row'>\n")
 	fmt.Fprintf(w, "<label for='staticRule' class='col-sm-2 col-form-label'><strong> Rule </strong></label>\n")
 	fmt.Fprintf(w, "<div class='col-sm-10'><input type='text' readonly class='form-control-plaintext' id='staticRule' value='%s'></div></div>\n", action.Name)
+
+	// show textInput where user can add keys
 	for index, key := range action.Table.Keys {
 		fmt.Fprintf(w, "<div class='mb-3 row'>\n")
 
 		if index == 0 {
+			// if first show the label "Key", than the list of keys
 			fmt.Fprintf(w, "<label class='form-label'><strong> Key </strong></label>\n")
 		}
 
+		// information of key (name, bitwidth)
 		fmt.Fprintf(w, "<label for='key%s' class='col-sm-5 col-form-label'> %s (bit&lt;%d&gt;)</label>\n", key.Name, key.Name, key.Bitwidth)
+
+		// area where write the key
 		fmt.Fprintf(w, "<div class='col-sm-7'><input type='text' class='form-control' name='key%s' id='key%s'></div>\n", key.Name, key.Name)
+		// i use "key"+key.Name to reference the key because when i handle the POST request i have to be able to find the key (actually keys don't have id)
 
 		fmt.Fprintf(w, "</div>\n")
 	}
 
+	// show textInput where user can add parameters (if there's no parameter just don't show anything)
 	for index, par := range action.Parameters {
 		fmt.Fprintf(w, "<div class='mb-3 row'>\n")
 
 		if index == 0 {
+			// if first show the label "Parameters", than the list of Parameters
 			fmt.Fprintf(w, "<label class='form-label'><strong> Parameters </strong></label>\n")
 		}
-
+		// information of parameter (name, bitwidth)
 		fmt.Fprintf(w, "<label for='par%s' class='col-sm-5 col-form-label'> %s (bit&lt;%d&gt;)</label>\n", par.Name, par.Name, par.Bitwidth)
+
 		fmt.Fprintf(w, "<div class='col-sm-7'><input type='text' class='form-control' name='par%s' id='par%s'></div>\n", par.Name, par.Name)
+		// as in keys i use "par"+parameter.Name to reference the parameter
 
 		fmt.Fprintf(w, "</div>\n")
 	}
 
+	// submit button
 	fmt.Fprintf(w, "<button type='submit' class='w-100 btn btn-success mt-3'>Add</button>\n")
 
 	fmt.Fprintf(w, "</div> </form> </div> </div> </body> </html>\n")
@@ -368,8 +414,13 @@ func addRule(w http.ResponseWriter, r *http.Request) {
 
 func executeProgram(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("got /executeProgram request")
-	// TO-DO
-	successMessage = "Hai cliccato con successo su esegui programma, bravo!"
+
+	// TO-DO handle this request:
+	// 1) change program in execution on switch
+	// 2) write a success/failure message on right variable
+	// 3) show index page by calling getRoot()
+
+	successMessage = "You successfully clicked on Execute, good job!"
 	getRoot(w, r)
 }
 
