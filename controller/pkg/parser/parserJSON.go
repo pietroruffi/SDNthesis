@@ -42,9 +42,13 @@ const (
 	ext  = ".json"
 )
 
+var errorMessage string
+var successMessage string
+
 func main() {
 	http.HandleFunc("/", getRoot)
-	//http.HandleFunc("/hello", getHello)
+	http.HandleFunc("/addRule", addRule)
+	http.HandleFunc("/executeProgram", executeProgram)
 	http.Handle("/web/", http.StripPrefix("/web/", http.FileServer(http.Dir("web"))))
 
 	err := http.ListenAndServe(":3333", nil)
@@ -199,6 +203,20 @@ func getRoot(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, string(byteValue))
 
 	fmt.Fprintf(w, "<div class='d-flex flex-column container-fluid align-items-center mt-5 mb-5'>\n")
+
+	// Eventuale messaggio di errore
+	if errorMessage != "" {
+		fmt.Fprintf(w, "<div class='alert alert-danger mt-5' role='alert'>%s</div>", errorMessage)
+		errorMessage = ""
+	}
+	//
+
+	// Eventuale messaggio di successo
+	if successMessage != "" {
+		fmt.Fprintf(w, "<div class='alert alert-success mt-5' role='alert'>%s</div>", successMessage)
+		successMessage = ""
+	}
+
 	fmt.Fprintf(w, "<div class='col-12 row justify-content-center mt-5'>\n")
 	fmt.Fprintf(w, "<div class='col-12 col-lg-4 col-xl-3 justify-content-center align-items-center'>\n")
 	fmt.Fprintf(w, "<h2 class='mb-3'>Change P4 program</h2>\n")
@@ -264,6 +282,20 @@ func getRoot(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(w, "</div> </div>")
 	}
 	fmt.Fprintf(w, "</div> </div> </div> </body> </html>")
+}
+
+func addRule(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("got /addRule request")
+	// TO-DO
+	successMessage = "Hai cliccato con successo su aggiungi regola, bravo"
+	getRoot(w, r)
+}
+
+func executeProgram(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("got /executeProgram request")
+	// TO-DO
+	errorMessage = "Hai cliccato con successo su esegui programma, bravo ma voglio testare l'errore"
+	getRoot(w, r)
 }
 
 func integer_contains(array []int, content int) bool {
