@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 )
 
@@ -189,18 +190,18 @@ func getActions(nameProgram string) []Action {
 func getRoot(w http.ResponseWriter, r *http.Request) {
 	fmt.Printf("got / request\n")
 
-	jsonFile, err := os.Open("header.html")
+	headerFile, err := os.Open("header.html")
 
 	if err != nil {
 		fmt.Println(err)
 	}
 	fmt.Print("[DEBUG] Successfully Opened header.html", "\n\n")
 
-	defer jsonFile.Close()
-
-	byteValue, _ := ioutil.ReadAll(jsonFile)
+	byteValue, _ := ioutil.ReadAll(headerFile)
 
 	fmt.Fprintf(w, string(byteValue))
+
+	headerFile.Close()
 
 	fmt.Fprintf(w, "<div class='d-flex flex-column container-fluid align-items-center mt-5 mb-5'>\n")
 
@@ -276,7 +277,7 @@ func getRoot(w http.ResponseWriter, r *http.Request) {
 			} else {
 				fmt.Fprintf(w, "<strong>No parameter required</strong><br><br>\n")
 			}
-			fmt.Fprintf(w, "<a href='addRule?switch=s%d&idTable=%d&idRule=%d'><button class='btn btn-primary rounded-pill' type='submit'>Add new rule</button></a>", sw, rule.Table.Id, rule.Id)
+			fmt.Fprintf(w, "<a href='addRule?switch=s%d&idRule=%d'><button class='btn btn-primary rounded-pill' type='submit'>Add new rule</button></a>", sw, rule.Id)
 			fmt.Fprintf(w, "</div> </div> </div>")
 		}
 		fmt.Fprintf(w, "</div> </div>")
@@ -286,16 +287,99 @@ func getRoot(w http.ResponseWriter, r *http.Request) {
 
 func addRule(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("got /addRule request")
-	// TO-DO
-	successMessage = "Hai cliccato con successo su aggiungi regola, bravo"
-	getRoot(w, r)
+
+	/*
+		// Questo codice estrae le informazioni dalle POST
+			if err := r.ParseForm(); err != nil {
+				fmt.Fprintf(w, "ParseForm() err: %v", err)
+				return
+			}
+			fmt.Fprintf(w, "Post from website! r.PostFrom = %v\n", r.PostForm)
+			name := r.FormValue("name")
+			address := r.FormValue("address")
+	*/
+
+	sw := r.URL.Query().Get("switch")
+
+	idRule, err := strconv.Atoi(r.URL.Query().Get("idRule"))
+
+	headerFile, err := os.Open("header.html")
+
+	if err != nil {
+		fmt.Println(err)
+	}
+	fmt.Print("[DEBUG] Successfully Opened header.html", "\n\n")
+
+	byteValue, _ := ioutil.ReadAll(headerFile)
+
+	fmt.Fprintf(w, string(byteValue))
+
+	headerFile.Close()
+
+	action := findActionById("simple", idRule)
+
+	fmt.Fprintf(w, "<div class='d-flex flex-column container-fluid vh-100 justify-content-center align-items-center'>\n")
+	fmt.Fprintf(w, "<div class='col-4 row justify-content-center align-items-center'>\n")
+
+	fmt.Fprintf(w, "<form class='col-12 row justify-content-center' action='/addRule' method='POST'>\n")
+
+	fmt.Fprintf(w, "<h2>Add new rule for switch %s</h2>\n", sw) //TODO add name switch
+	fmt.Fprintf(w, "<div class='mb-3'>\n <div class='mb-3 row'>\n")
+	fmt.Fprintf(w, "<label for='staticTable' class='col-sm-2 col-form-label'><strong> Table </strong></label>\n")
+	fmt.Fprintf(w, "<div class='col-sm-10'><input type='text' readonly class='form-control-plaintext' id='staticTable' value='%s'></div></div>\n", action.Table.Name)
+
+	fmt.Fprintf(w, "<div class='mb-3 row'>\n")
+	fmt.Fprintf(w, "<label for='staticRule' class='col-sm-2 col-form-label'><strong> Rule </strong></label>\n")
+	fmt.Fprintf(w, "<div class='col-sm-10'><input type='text' readonly class='form-control-plaintext' id='staticRule' value='%s'></div></div>\n", action.Name)
+	for index, key := range action.Table.Keys {
+		fmt.Fprintf(w, "<div class='mb-3 row'>\n")
+
+		if index == 0 {
+			fmt.Fprintf(w, "<label class='form-label'><strong> Key </strong></label>\n")
+		}
+
+		fmt.Fprintf(w, "<label for='key%s' class='col-sm-5 col-form-label'> %s (bit&lt;%d&gt;)</label>\n", key.Name, key.Name, key.Bitwidth)
+		fmt.Fprintf(w, "<div class='col-sm-7'><input type='text' class='form-control' name='key%s' id='key%s'></div>\n", key.Name, key.Name)
+
+		fmt.Fprintf(w, "</div>\n")
+	}
+
+	for index, par := range action.Parameters {
+		fmt.Fprintf(w, "<div class='mb-3 row'>\n")
+
+		if index == 0 {
+			fmt.Fprintf(w, "<label class='form-label'><strong> Parameters </strong></label>\n")
+		}
+
+		fmt.Fprintf(w, "<label for='par%s' class='col-sm-5 col-form-label'> %s (bit&lt;%d&gt;)</label>\n", par.Name, par.Name, par.Bitwidth)
+		fmt.Fprintf(w, "<div class='col-sm-7'><input type='text' class='form-control' name='par%s' id='par%s'></div>\n", par.Name, par.Name)
+
+		fmt.Fprintf(w, "</div>\n")
+	}
+
+	fmt.Fprintf(w, "<button type='submit' class='w-100 btn btn-success mt-3'>Add</button>\n")
+
+	fmt.Fprintf(w, "</div> </form> </div> </div> </body> </html>\n")
+
+	//successMessage = "Hai cliccato con successo su aggiungi regola, bravo"
+
+	//getRoot(w, r)
 }
 
 func executeProgram(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("got /executeProgram request")
 	// TO-DO
-	errorMessage = "Hai cliccato con successo su esegui programma, bravo ma voglio testare l'errore"
+	successMessage = "Hai cliccato con successo su esegui programma, bravo!"
 	getRoot(w, r)
+}
+
+func findActionById(program string, id int) *Action {
+	for _, action := range getActions(program) {
+		if action.Id == id {
+			return &action
+		}
+	}
+	return nil
 }
 
 func integer_contains(array []int, content int) bool {
