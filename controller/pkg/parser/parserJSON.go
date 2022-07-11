@@ -18,8 +18,9 @@ type Table struct {
 }
 
 type Key struct {
-	Name  string
-	Match string
+	Name     string
+	Match    string
+	Bitwidth int
 	//Target []string // add? useful?
 	Mask string
 }
@@ -37,9 +38,8 @@ type Parameter struct {
 }
 
 const (
-	path      = "../../../p4/"
-	p4Program = "asymmetric"
-	ext       = ".json"
+	path = "../../../p4/"
+	ext  = ".json"
 )
 
 func main() {
@@ -56,8 +56,8 @@ func main() {
 	}
 }
 
-func getActions() []Action {
-	filename := path + p4Program + ext
+func getActions(nameProgram string) []Action {
+	filename := path + nameProgram + ext
 
 	jsonFile, err := os.Open(filename)
 
@@ -87,7 +87,7 @@ func getActions() []Action {
 			table := all_tables.([]interface{})[index_tables].(map[string]interface{})
 
 			// doesn't consider default tables (ones which starts with tbl_nameP4Program)
-			if strings.HasPrefix(table["name"].(string), "tbl_"+p4Program) {
+			if strings.HasPrefix(table["name"].(string), "tbl_"+nameProgram) {
 				continue
 			}
 
@@ -104,8 +104,9 @@ func getActions() []Action {
 				}
 
 				talbe_keys = append(talbe_keys, Key{
-					Name:  key["name"].(string),
-					Match: key["match_type"].(string),
+					Name:     key["name"].(string),
+					Match:    key["match_type"].(string),
+					Bitwidth: 32,
 					//Target: c["target"].([]string), // add? useful?
 					Mask: mask,
 				})
@@ -126,11 +127,12 @@ func getActions() []Action {
 		}
 
 	}
-	for _, ta := range tables {
-		fmt.Println("[DEBUG-TABLES]", ta)
-	}
-	fmt.Print("\n")
-
+	/*
+		for _, ta := range tables {
+			fmt.Println("[DEBUG-TABLES]", ta)
+		}
+		fmt.Print("\n")
+	*/
 	// Extract actions informations
 
 	var actions []Action
@@ -140,7 +142,7 @@ func getActions() []Action {
 		action := (result["actions"].([]interface{})[index_actions]).(map[string]interface{})
 
 		// doesn't consider default tables (ones which starts with nameP4Program)
-		if strings.HasPrefix(action["name"].(string), p4Program) {
+		if strings.HasPrefix(action["name"].(string), nameProgram) {
 			continue
 		}
 
@@ -172,31 +174,96 @@ func getActions() []Action {
 			Parameters: action_parameters,
 		})
 	}
-	for ac := range actions {
-		fmt.Println("[DEBUG-ACTIONS]", actions[ac])
-	}
+	/*
+		for ac := range actions {
+			fmt.Println("[DEBUG-ACTIONS]", actions[ac])
+		}
+	*/
 	return actions
 }
 
 func getRoot(w http.ResponseWriter, r *http.Request) {
 	fmt.Printf("got / request\n")
-	/*p := &Page{Title: title}
-	err := templates.ExecuteTemplate(w, "index.html", p)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}*/
-	jsonFile, err := os.Open("index.html")
+
+	jsonFile, err := os.Open("header.html")
 
 	if err != nil {
 		fmt.Println(err)
 	}
-	fmt.Print("[DEBUG] Successfully Opened index.html", "\n\n")
+	fmt.Print("[DEBUG] Successfully Opened header.html", "\n\n")
 
 	defer jsonFile.Close()
 
 	byteValue, _ := ioutil.ReadAll(jsonFile)
 
 	fmt.Fprintf(w, string(byteValue))
+
+	fmt.Fprintf(w, "<div class='d-flex flex-column container-fluid align-items-center mt-5 mb-5'>\n")
+	fmt.Fprintf(w, "<div class='col-12 row justify-content-center mt-5'>\n")
+	fmt.Fprintf(w, "<div class='col-12 col-lg-4 col-xl-3 justify-content-center align-items-center'>\n")
+	fmt.Fprintf(w, "<h2 class='mb-3'>Change P4 program</h2>\n")
+
+	programOnSwitches := [3]string{"simple", "simple", "asymmetric"}
+
+	// Ora inizia la parte da ripetere per ogni switch, per quanto riguarda l'esecuzione dei programmi
+	programs := [3]string{"simple", "simple1", "asymmetric"}
+	for sw := 1; sw <= 3; sw++ {
+		fmt.Fprintf(w, "<h2 class='mt-4'><a class='btn btn-light fs-4 p-2 w-100' style='font-weight: 500' href='#switchS%dExec' data-bs-toggle='collapse'>Switch S%d</a></h2>\n", sw, sw)
+		fmt.Fprintf(w, "<ul class='list-group collapse' id='switchS%dExec'>\n", sw)
+		for _, prog := range programs {
+			if prog == programOnSwitches[sw-1] {
+				fmt.Fprintf(w, "<li class='list-group-item d-flex justify-content-between align-items-center'>%s\n", prog)
+				fmt.Fprintf(w, "<button class='btn btn-success rounded-pill' disabled> Executing </button>\n</li>")
+			} else {
+				fmt.Fprintf(w, "<li class='list-group-item d-flex justify-content-between align-items-center'>%s\n", prog)
+				fmt.Fprintf(w, "<a href='executeProgram?sw=s%d&pr=%s'><button class='btn btn-primary rounded-pill'> Execute </button></a>\n</li>", sw, prog)
+			}
+		}
+		fmt.Fprintf(w, "</ul>\n")
+	}
+	fmt.Fprintf(w, "</div>\n")
+	fmt.Fprintf(w, "<div class='col-12 col-sm-6 col-lg-4 col-xl-3 mt-5 mt-lg-0 align-items-center'>\n")
+	fmt.Fprintf(w, "<h2 class='mb-3'>Install new rules</h2>\n")
+
+	// Ora inizia la parte da ripetere per ogni switch, per quanto riguarda l'inserimento di regole
+	for sw := 1; sw <= 3; sw++ {
+		fmt.Fprintf(w, "<h2 class='mt-4'> <a class='btn btn-light fs-4 p-2 w-100' style='font-weight: 500' href='#switchS%dRule' data-bs-toggle='collapse'>Switch S%d</a> </h2>\n", sw, sw)
+		fmt.Fprintf(w, "<div class='list-group collapse' id='switchS%dRule'>\n", sw)
+		fmt.Fprintf(w, "<div class='accordion' id='accordionSwitchS%d'>\n", sw)
+
+		for n, rule := range getActions(programOnSwitches[sw-1]) {
+
+			fmt.Fprintf(w, "<div class='accordion-item'>")
+			fmt.Fprintf(w, "<h2 class='accordion-header' id='headingS%dRule%d'>\n", sw, n)
+			fmt.Fprintf(w, "<button class='accordion-button collapsed' type='button' data-bs-toggle='collapse' data-bs-target='#collapseS%dRule%d' aria-expanded='false' aria-controls='collapseS%dRule%d'>%s</button>\n", sw, n, sw, n, rule.Name)
+			fmt.Fprintf(w, "</h2>\n")
+			fmt.Fprintf(w, "<div id='collapseS%dRule%d' class='accordion-collapse collapse' aria-labelledby='headingS%dRule%d' data-bs-parent='#accordionSwitchS%d'>\n<div class='accordion-body'>\n", sw, n, sw, n, sw)
+
+			fmt.Fprintf(w, "<strong>Table</strong><br>\n")
+			fmt.Fprintf(w, "<ul><li>%s</li></ul>\n", rule.Table.Name)
+
+			fmt.Fprintf(w, "<strong>Key</strong><br>\n<ul>\n")
+
+			for _, key := range rule.Table.Keys {
+				fmt.Fprintf(w, "<li>%s (bit&lt;%d&gt;), match: %s</li>\n", key.Name, key.Bitwidth, key.Match)
+			}
+
+			fmt.Fprintf(w, "</ul>")
+			if len(rule.Parameters) > 0 {
+				fmt.Fprintf(w, "<strong>Parameters</strong><br>\n<ul>\n")
+				for _, par := range rule.Parameters {
+					fmt.Fprintf(w, "<li>%s (bit&lt;%d&gt;)</li>\n", par.Name, par.Bitwidth)
+				}
+				fmt.Fprintf(w, "</ul>")
+			} else {
+				fmt.Fprintf(w, "<strong>No parameter required</strong><br><br>\n")
+			}
+			fmt.Fprintf(w, "<a href='addRule?switch=s%d&idTable=%d&idRule=%d'><button class='btn btn-primary rounded-pill' type='submit'>Add new rule</button></a>", sw, rule.Table.Id, rule.Id)
+			fmt.Fprintf(w, "</div> </div> </div>")
+		}
+		fmt.Fprintf(w, "</div> </div>")
+	}
+	fmt.Fprintf(w, "</div> </div> </div> </body> </html>")
 }
 
 func integer_contains(array []int, content int) bool {
