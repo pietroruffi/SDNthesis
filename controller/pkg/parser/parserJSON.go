@@ -19,6 +19,7 @@ type Table struct {
 }
 
 type Key struct {
+	Id       int
 	Name     string
 	Match    string
 	Bitwidth int
@@ -34,6 +35,7 @@ type Action struct {
 }
 
 type Parameter struct {
+	Id       int
 	Name     string
 	Bitwidth int
 }
@@ -113,6 +115,7 @@ func getActionsByP4InfoJson(nameProgram string) []Action {
 			}
 
 			talbe_keys = append(talbe_keys, Key{
+				Id:       int(key["id"].(float64)),
 				Name:     key["name"].(string),
 				Match:    key["matchType"].(string),
 				Bitwidth: int(key["bitwidth"].(float64)),
@@ -167,6 +170,7 @@ func getActionsByP4InfoJson(nameProgram string) []Action {
 				parameter := action["params"].([]interface{})[index_parameters].(map[string]interface{})
 
 				action_parameters = append(action_parameters, Parameter{
+					Id:       int(parameter["id"].(float64)),
 					Name:     parameter["name"].(string),
 					Bitwidth: int(parameter["bitwidth"].(float64)),
 				})
@@ -447,19 +451,7 @@ func getRoot(w http.ResponseWriter, r *http.Request) {
 func addRule(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("got /addRule request")
 
-	/*
-		// Questo codice estrae le informazioni dalle POST
-
-			if err := r.ParseForm(); err != nil {
-				fmt.Fprintf(w, "ParseForm() err: %v", err)
-				return
-			}
-			fmt.Fprintf(w, "Post from website! r.PostFrom = %v\n", r.PostForm)
-			name := r.FormValue("name")
-			address := r.FormValue("address")
-
-		// CHANGE? Una volta finito rimandare alla pagina principale? La gestisco io la POST o qualcun altro?
-	*/
+	// CHANGE? Una volta finito rimandare alla pagina principale? La gestisco io la POST o qualcun altro?
 
 	sw := r.URL.Query().Get("switch")
 
@@ -467,6 +459,20 @@ func addRule(w http.ResponseWriter, r *http.Request) {
 
 	idTable, err := strconv.Atoi(r.URL.Query().Get("idTable"))
 
+	//template.Must()
+	// Questo codice estrae le informazioni dalle POST
+	/*
+		if err := r.ParseForm(); err != nil {
+			fmt.Println("ParseForm() err:", err)
+			return
+		}
+		fmt.Println("Post from website! r.PostFrom =", r.PostForm)
+		key1 := r.FormValue("key1")
+		par1 := r.FormValue("par1")
+		par2 := r.FormValue("par2")
+
+		fmt.Println(key1, par1, par2)
+	*/
 	headerFile, err := os.Open("header.html")
 
 	if err != nil {
@@ -487,7 +493,7 @@ func addRule(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "<div class='col-4 row justify-content-center align-items-center'>\n")
 
 	// CHANGE? DON'T SANITIZE INPUT? WHICH PAGE HANDLE THE POST
-	fmt.Fprintf(w, "<form class='col-12 row justify-content-center' action='/addRule?switch=%s&idRule=%d' method='POST'>\n", sw, idRule)
+	fmt.Fprintf(w, "<form class='col-12 row justify-content-center' action='/addRule?switch=%s&idRule=%d&idTable=%d' method='POST'>\n", sw, idRule, idTable)
 
 	// title
 	fmt.Fprintf(w, "<h2>Add new rule for switch %s</h2>\n", sw)
@@ -514,11 +520,11 @@ func addRule(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// information of key (name, bitwidth)
-		fmt.Fprintf(w, "<label for='key%s' class='col-sm-5 col-form-label'> %s (bit&lt;%d&gt;)</label>\n", key.Name, key.Name, key.Bitwidth)
+		fmt.Fprintf(w, "<label for='key%d' class='col-sm-5 col-form-label'> %s (bit&lt;%d&gt;)</label>\n", key.Id, key.Name, key.Bitwidth)
 
 		// area where write the key
-		fmt.Fprintf(w, "<div class='col-sm-7'><input type='text' class='form-control' name='key%s' id='key%s'></div>\n", key.Name, key.Name)
-		// i use "key"+key.Name to reference the key because when i handle the POST request i have to be able to find the key (actually keys don't have id)
+		fmt.Fprintf(w, "<div class='col-sm-7'><input type='text' class='form-control' name='key%d' id='key%d'></div>\n", key.Id, key.Id)
+		// i use "key"+key.Id to reference the key when i handle the POST
 
 		fmt.Fprintf(w, "</div>\n")
 	}
@@ -532,10 +538,10 @@ func addRule(w http.ResponseWriter, r *http.Request) {
 			fmt.Fprintf(w, "<label class='form-label'><strong> Parameters </strong></label>\n")
 		}
 		// information of parameter (name, bitwidth)
-		fmt.Fprintf(w, "<label for='par%s' class='col-sm-5 col-form-label'> %s (bit&lt;%d&gt;)</label>\n", par.Name, par.Name, par.Bitwidth)
+		fmt.Fprintf(w, "<label for='par%d' class='col-sm-5 col-form-label'> %s (bit&lt;%d&gt;)</label>\n", par.Id, par.Name, par.Bitwidth)
 
-		fmt.Fprintf(w, "<div class='col-sm-7'><input type='text' class='form-control' name='par%s' id='par%s'></div>\n", par.Name, par.Name)
-		// as in keys i use "par"+parameter.Name to reference the parameter
+		fmt.Fprintf(w, "<div class='col-sm-7'><input type='text' class='form-control' name='par%d' id='par%d'></div>\n", par.Id, par.Id)
+		// as in keys i use "par"+parameter.Id to reference the parameter
 
 		fmt.Fprintf(w, "</div>\n")
 	}
