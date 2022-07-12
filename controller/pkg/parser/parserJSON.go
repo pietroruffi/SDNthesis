@@ -39,8 +39,10 @@ type Parameter struct {
 }
 
 const (
-	path = "../../../p4/"
-	ext  = ".json"
+	path         = "../../../p4/"
+	pathJsonInfo = "../../../p4/JsonOfP4info/"
+	ext          = ".json"
+	extJsonInfo  = ".p4.p4info.json"
 )
 
 var errorMessage string
@@ -59,6 +61,138 @@ func main() {
 		fmt.Printf("error starting server: %s\n", err)
 		os.Exit(1)
 	}
+}
+
+func getActionsByP4InfoJson(nameProgram string) []Action {
+
+	filename := pathJsonInfo + nameProgram + extJsonInfo
+
+	jsonFile, err := os.Open(filename)
+
+	if err != nil {
+		fmt.Println(err)
+		return nil
+	}
+	fmt.Print("[DEBUG] Successfully Opened ", filename, "\n\n")
+
+	defer jsonFile.Close()
+
+	byteValue, _ := ioutil.ReadAll(jsonFile)
+
+	var result map[string]interface{}
+
+	json.Unmarshal([]byte(byteValue), &result)
+
+	var tables []Table
+
+	for i := range result["tables"].([]interface{}) {
+
+		table := result["tables"].([]interface{})[i].(map[string]interface{})
+
+		// doesn't consider default tables (ones which starts with tbl_nameP4Program)
+		/*if strings.HasPrefix(table["name"].(string), "tbl_"+nameProgram) {
+			continue
+		}*/
+
+		preamble := table["preamble"].(map[string]interface{})
+		table_name := preamble["name"]
+		table_id := int(preamble["id"].(float64))
+
+		var talbe_keys []Key
+
+		for index_keys := range table["matchFields"].([]interface{}) {
+
+			key := table["matchFields"].([]interface{})[index_keys].(map[string]interface{})
+
+			// mask can either be present or not
+			var mask string
+			if key["mask"] != nil {
+				mask = key["mask"].(string)
+			}
+
+			talbe_keys = append(talbe_keys, Key{
+				Name:     key["name"].(string),
+				Match:    key["matchType"].(string),
+				Bitwidth: int(key["bitwidth"].(float64)),
+				//Target: c["target"].([]string), // add? useful?
+				Mask: mask,
+			})
+		}
+
+		var actions_ids []int
+		for _, action_id := range table["actionRefs"].([]interface{}) {
+			actions_ids = append(actions_ids, int(action_id.(map[string]interface{})["id"].(float64)))
+		}
+
+		tables = append(tables, Table{
+			Id:         table_id,
+			Name:       table_name.(string),
+			Keys:       talbe_keys,
+			ActionsIds: actions_ids,
+		})
+	}
+	/*
+		for _, ta := range tables {
+			fmt.Println("[DEBUG-TABLES]", ta)
+		}
+		fmt.Print("\n")
+	*/
+	// Extract actions informations
+
+	var actions []Action
+
+	for index_actions := range result["actions"].([]interface{}) {
+
+		action := (result["actions"].([]interface{})[index_actions]).(map[string]interface{})
+
+		// doesn't consider default tables (ones which starts with nameP4Program)
+		/*
+			if strings.HasPrefix(action["name"].(string), nameProgram) {
+				continue
+			}
+		*/
+
+		preamble := action["preamble"].(map[string]interface{})
+		action_name := preamble["name"]
+		action_id := int(preamble["id"].(float64))
+
+		//fmt.Print("\n\t", action, "\n\t", action_name, action_id, "\n\n")
+
+		var action_parameters []Parameter
+
+		if action["params"] != nil {
+			for index_parameters := range action["params"].([]interface{}) {
+				parameter := action["params"].([]interface{})[index_parameters].(map[string]interface{})
+
+				action_parameters = append(action_parameters, Parameter{
+					Name:     parameter["name"].(string),
+					Bitwidth: int(parameter["bitwidth"].(float64)),
+				})
+			}
+		}
+		// find table which contains actual action
+
+		for _, action_table := range tables {
+
+			if integer_contains(action_table.ActionsIds, action_id) {
+
+				actions = append(actions, Action{
+					Table:      action_table,
+					Id:         action_id,
+					Name:       action_name.(string),
+					Parameters: action_parameters,
+				})
+
+			}
+		}
+
+	}
+	/*
+		for ac := range actions {
+			fmt.Println("[DEBUG-ACTIONS]", actions[ac])
+		}
+	*/
+	return actions
 }
 
 func getActions(nameProgram string) []Action {
@@ -225,7 +359,7 @@ func getRoot(w http.ResponseWriter, r *http.Request) {
 	// Part of web page where user can change the P4 program in execution on every switch
 	fmt.Fprintf(w, "<h2 class='mb-3'>Change P4 program</h2>\n")
 
-	// TO-DO read which program is actually in execution of every switch
+	// TO-DO read which program is actually in execution on every switch
 	programOnSwitches := [3]string{"simple", "simple", "asymmetric"}
 
 	// TO-DO read all available programs
@@ -264,7 +398,7 @@ func getRoot(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(w, "<div class='accordion' id='accordionSwitchS%d'>\n", sw)
 
 		// print actions information, for every action inside the P4 program actually executing on switch
-		for index_rule, rule := range getActions(programOnSwitches[sw-1]) {
+		for index_rule, rule := range getActionsByP4InfoJson(programOnSwitches[sw-1]) {
 
 			// beginning of new action
 			fmt.Fprintf(w, "<div class='accordion-item'>")
@@ -300,7 +434,7 @@ func getRoot(w http.ResponseWriter, r *http.Request) {
 			}
 
 			// button which redirects to page /addRule where user can add the action he choose
-			fmt.Fprintf(w, "<a href='addRule?switch=s%d&idRule=%d'><button class='btn btn-primary rounded-pill' type='submit'>Add new rule</button></a>", sw, rule.Id)
+			fmt.Fprintf(w, "<a href='addRule?switch=s%d&idRule=%d&idTable=%d'><button class='btn btn-primary rounded-pill' type='submit'>Add new rule</button></a>", sw, rule.Id, rule.Table.Id)
 			fmt.Fprintf(w, "</div> </div> </div>")
 		}
 		fmt.Fprintf(w, "</div> </div>")
@@ -329,6 +463,8 @@ func addRule(w http.ResponseWriter, r *http.Request) {
 
 	idRule, err := strconv.Atoi(r.URL.Query().Get("idRule"))
 
+	idTable, err := strconv.Atoi(r.URL.Query().Get("idTable"))
+
 	headerFile, err := os.Open("header.html")
 
 	if err != nil {
@@ -342,13 +478,13 @@ func addRule(w http.ResponseWriter, r *http.Request) {
 
 	headerFile.Close()
 	// TO-DO: add which program is executing on switch
-	action := findActionById("simple", idRule)
+	action := findActionByIdAndTable("asymmetric", idRule, idTable)
 
 	// some <div> for better graphic ...
 	fmt.Fprintf(w, "<div class='d-flex flex-column container-fluid vh-100 justify-content-center align-items-center'>\n")
 	fmt.Fprintf(w, "<div class='col-4 row justify-content-center align-items-center'>\n")
 
-	// CHANGE? DON'T SANITIZE INPUT?
+	// CHANGE? DON'T SANITIZE INPUT? WHICH PAGE HANDLE THE POST
 	fmt.Fprintf(w, "<form class='col-12 row justify-content-center' action='/addRule?switch=%s&idRule=%d' method='POST'>\n", sw, idRule)
 
 	// title
@@ -424,9 +560,9 @@ func executeProgram(w http.ResponseWriter, r *http.Request) {
 	getRoot(w, r)
 }
 
-func findActionById(program string, id int) *Action {
-	for _, action := range getActions(program) {
-		if action.Id == id {
+func findActionByIdAndTable(program string, idAction int, idTable int) *Action {
+	for _, action := range getActionsByP4InfoJson(program) {
+		if action.Id == idAction && action.Table.Id == idTable {
 			return &action
 		}
 	}
