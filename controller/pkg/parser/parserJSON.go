@@ -65,6 +65,8 @@ func main() {
 
 func getActionsByP4InfoJson(nameProgram string) []Action {
 
+	// TO-DO save actions in static variable so u don't have to read the files every time
+
 	filename := pathJsonInfo + nameProgram + extJsonInfo
 
 	jsonFile, err := os.Open(filename)
@@ -410,13 +412,13 @@ func getRoot(w http.ResponseWriter, r *http.Request) {
 			// informations inside the collapsed <div>
 			fmt.Fprintf(w, "<div id='collapseS%dRule%d' class='accordion-collapse collapse' aria-labelledby='headingS%dRule%d' data-bs-parent='#accordionSwitchS%d'>\n<div class='accordion-body'>\n", sw, index_rule, sw, index_rule, sw)
 
-			// Table name
-			fmt.Fprintf(w, "<strong>Table</strong><br>\n")
+			// Table name (with a little logo :D )
+			fmt.Fprintf(w, "<strong>Table</strong>&nbsp;<img src='./web/img/table.svg'><br>\n")
 			fmt.Fprintf(w, "<ul><li>%s</li></ul>\n", rule.Table.Name)
 
-			// Keys of table
-			fmt.Fprintf(w, "<strong>Key</strong><br>\n<ul>\n")
-
+			// Keys of table (with a little logo :D )
+			fmt.Fprintf(w, "<strong>Key</strong>&nbsp;<img src='./web/img/key.svg'><br>\n<ul>\n")
+			// Just an img of a key
 			for _, key := range rule.Table.Keys {
 				fmt.Fprintf(w, "<li>%s (bit&lt;%d&gt;), match: %s</li>\n", key.Name, key.Bitwidth, key.Match)
 			}
@@ -424,7 +426,7 @@ func getRoot(w http.ResponseWriter, r *http.Request) {
 
 			// Parameters of action, if none print: "No parameter required"
 			if len(rule.Parameters) > 0 {
-				fmt.Fprintf(w, "<strong>Parameters</strong><br>\n<ul>\n")
+				fmt.Fprintf(w, "<strong>Parameters</strong>&nbsp;<img src='./web/img/card-list.svg'><br>\n<ul>\n")
 				for _, par := range rule.Parameters {
 					fmt.Fprintf(w, "<li>%s (bit&lt;%d&gt;)</li>\n", par.Name, par.Bitwidth)
 				}
