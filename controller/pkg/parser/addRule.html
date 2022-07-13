@@ -44,54 +44,55 @@
     </nav>
     <!--    FINE-HEADER   -->
     <!--    INIZIO   -->
-    <div class='d-flex flex-column container-fluid vh-100 justify-content-center align-items-center'>
-        <div class='col-4 row justify-content-center align-items-center'>
-            <form class='col-12 row justify-content-center' action='#' method='POST'>
+    <div class='d-flex flex-column container-fluid align-items-center mt-5 mb-5'>
+        <div class='col-12 row justify-content-center mt-5'>
+            <div class='col-12 col-sm-7 col-lg-4 col-xl-4 mt-5 mt-lg-0 align-items-center'>
 
-                <!-- Eventuale messaggio di successo/errore?
+                    <!-- Eventuale messaggio di successo/errore?
+                        
+                    <div class="alert alert-success mt-5" role="alert" >
+                        Operazione eseguita con successo
+                    </div>
                     
-                <div class="alert alert-success mt-5" role="alert" >
-                    Operazione eseguita con successo
-                </div>
-                
-                -->
-                <h2>Add new rule for switch S1</h2>
-                <div class='mb-3'>
-                    <div class='mb-3 row'>
-                        <label for='staticTable' class='col-sm-2 col-form-label'><strong>Table</strong></label>
-                        <div class='col-sm-10'>
-                            <input type='text' readonly class='form-control-plaintext' id='staticTable' value='MyIngress.ipv4_lpm'>
+                    -->
+                    <h2>Add new rule for switch S1</h2>
+                    <div class='mb-3'>
+                        <div class='mb-3 row'>
+                            <label for='staticTable' class='col-sm-2 col-form-label'><strong>Table</strong></label>
+                            <div class='col-sm-10'>
+                                <input type='text' readonly class='form-control-plaintext' id='staticTable' value='MyIngress.ipv4_lpm'>
+                            </div>
                         </div>
+                        <div class='mb-3 row'>
+                            <label for='staticRule' class='col-sm-2 col-form-label'><strong>Rule</strong></label>
+                            <div class='col-sm-10'>
+                                <input type='text' readonly class='form-control-plaintext' id='staticRule' value='MyIngress.ipv4_forward'>
+                            </div>
+                        </div>
+                        <div class='mb-3 row'>
+                            <label class='form-label'><strong>Key</strong></label>
+                            <label for='key1' class='col-sm-5 col-form-label'>hdr.ipv4.dstAddr (bit&lt;32&gt;)</label>
+                            <div class='col-sm-7'>
+                                <input type='text' class='form-control' name='key1' id='inputKey' placeholder='IPv4 Address (ex 10.0.0.1)'>
+                            </div>
+                        </div>
+                        <div class='mb-3 row'>
+                            <label class='form-label'><strong>Parameters</strong></label>
+                            <label for='par1' class='col-sm-5 col-form-label'>dstAddr (bit&lt;48&gt;)</label>
+                            <div class='col-sm-7'>
+                                <input type='text' class='form-control' name='par1' id='par1' placeholder='MAC Address (ex 08:00:00:00:01:00)'>
+                            </div>
+                        </div>
+                        <div class='mb-3 row'>
+                            <label for='par2' class='col-sm-5 col-form-label'>port (bit&lt;9&gt;)</label>
+                            <div class='col-sm-7'>
+                                <input type='text' class='form-control' name='par2' id='par2' placeholder='Port (integer)'>
+                            </div>
+                        </div>       
+                        <button type='submit' class='w-100 btn btn-success mt-4'>Add</button>
                     </div>
-                    <div class='mb-3 row'>
-                        <label for='staticRule' class='col-sm-2 col-form-label'><strong>Rule</strong></label>
-                        <div class='col-sm-10'>
-                            <input type='text' readonly class='form-control-plaintext' id='staticRule' value='MyIngress.ipv4_forward'>
-                        </div>
-                    </div>
-                    <div class='mb-3 row'>
-                        <label class='form-label'><strong>Key</strong></label>
-                        <label for='key1' class='col-sm-5 col-form-label'>hdr.ipv4.dstAddr (bit&lt;32&gt;)</label>
-                        <div class='col-sm-7'>
-                            <input type='text' class='form-control' name='key1' id='inputKey' placeholder='IPv4 Address (ex 10.0.0.1)'>
-                        </div>
-                    </div>
-                    <div class='mb-3 row'>
-                        <label class='form-label'><strong>Parameters</strong></label>
-                        <label for='par1' class='col-sm-5 col-form-label'>dstAddr (bit&lt;48&gt;)</label>
-                        <div class='col-sm-7'>
-                            <input type='text' class='form-control' name='par1' id='par1' placeholder='MAC Address (ex 08:00:00:00:01:00)'>
-                        </div>
-                    </div>
-                    <div class='mb-3 row'>
-                        <label for='par2' class='col-sm-5 col-form-label'>port (bit&lt;9&gt;)</label>
-                        <div class='col-sm-7'>
-                            <input type='text' class='form-control' name='par2' id='par2' placeholder='Port (integer)'>
-                        </div>
-                    </div>       
-                    <button type='submit' class='w-100 btn btn-success mt-3'>Add</button>
-                </div>
-            </form>
+                </form>
+            </div>
         </div>
     </div>
         <!--    FINE    -->

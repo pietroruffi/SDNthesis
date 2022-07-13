@@ -50,25 +50,23 @@
     <!--    FINE-HEADER   -->
     <!--    INIZIO   -->
     <div class='d-flex flex-column container-fluid align-items-center mt-5 mb-5'>
-        
-        <!--
-        <div class='alert alert-danger mt-5' role='alert' >
-            Messaggio di errore
-        </div>
-        -->
-        <!--
-        <div class='alert alert-success mt-5' role='alert' >
-            Operazione eseguita con successo
-        </div>
-        -->
-
+        {{ if ne "" .ErrorMessage }}
+            <div class='alert alert-danger mt-5' role='alert' >
+                {{ .ErrorMessage }}
+            </div>
+        {{ end }}
+        {{ if ne "" .SuccessMessage }}
+            <div class='alert alert-success mt-5' role='alert' >
+                {{ .SuccessMessage }}
+            </div>
+        {{ end }}
         <div class='col-12 row justify-content-center mt-5'>
-            <div class='col-12 col-lg-4 col-xl-3 justify-content-center align-items-center'>
+            <div class='col-12 col-sm-6 col-lg-4 col-xl-3 mt-5 mt-lg-0 align-items-center'>
                 <h2 class='mb-3'>Change P4 program</h2>
 
                 <!-- Ripeti la parte sottostante per ogni switch -->
-                {{$programs := .ProgramNames}}
-                {{range $switch := .Switches}}
+                {{ $programs := .ProgramNames }}
+                {{ range $switch := .Switches }}
                 <h2 class='mt-4'><a class='btn btn-light fs-4 p-2 w-100' style='font-weight: 500' href='#switch{{$switch.Name}}'
                         data-bs-toggle='collapse'>Switch {{$switch.Name}}</a></h2>
                     <ul class='list-group collapse' id='switch{{$switch.Name}}'>
@@ -76,41 +74,37 @@
                         <li class='list-group-item d-flex justify-content-between align-items-center'>
                             {{$program}}
                             {{if eq $switch.Program.Name $program }}
-                            <button class='btn btn-success rounded-pill' disabled>Executing</button>
+                                <button class='btn btn-success rounded-pill' disabled>Executing</button>
                             {{else}}
-                            <a href='executeProgram?switch={{$switch.Name}}&program={{$program}}'><button class='btn btn-primary rounded-pill'>Execute</button></a>
+                                <a href='executeProgram?switch={{$switch.Name}}&program={{$program}}'><button class='btn btn-primary rounded-pill'>Execute</button></a>
                             {{end}}
                         </li>
                         {{end}}
                     </ul>
                 {{end}}
                 <!-- Finisce la parte da ripetere per ogni switch -->
-
             </div>
-
-
 
             <div class='col-12 col-sm-6 col-lg-4 col-xl-3 mt-5 mt-lg-0 align-items-center'>
 
                 <h2 class='mb-3'>Install new rules</h2>
                 <!-- Ripeti la parte sottostante per ogni switch -->
                 {{ range $switch := .Switches }}
-                {{ $swProgram := $switch.Program }}
                 <h2 class='mt-4'>
                     <a class='btn btn-light fs-4 p-2 w-100' style='font-weight: 500' href='#switch{{$switch.Name}}Rule' data-bs-toggle='collapse'>Switch {{$switch.Name}}</a>
                 </h2>
                 <div class='list-group collapse' id='switch{{$switch.Name}}Rule'>
                     <div class='accordion' id='accordion{{$switch.Name}}'>
                         <!-- Ripeti la parte sottostante per ogni regola -->
-                        {{ range $index_rule, $rule := $swProgram.Actions }}
+                        {{ range $index_rule, $rule := $switch.Program.Actions }}
                         <div class='accordion-item'>
-                            <h2 class='accordion-header' id='heading{{$switch.Name}}dRule{{$index_rule}}'>
+                            <h2 class='accordion-header' id='heading{{$switch.Name}}Rule{{$index_rule}}'>
                                 <button class='accordion-button collapsed' type='button' data-bs-toggle='collapse'
-                                    data-bs-target='#collapse{{$switch.Name}}dRule{{$index_rule}}' aria-expanded='false' aria-controls='collapse{{$switch.Name}}dRule{{$index_rule}}'>
+                                    data-bs-target='#collapse{{$switch.Name}}Rule{{$index_rule}}' aria-expanded='false' aria-controls='collapse{{$switch.Name}}Rule{{$index_rule}}'>
                                     {{ $rule.Name }}
                                 </button>
                             </h2>
-                            <div id='collapse{{$switch.Name}}dRule{{$index_rule}}' class='accordion-collapse collapse' aria-labelledby='heading{{$switch.Name}}dRule{{$index_rule}}'
+                            <div id='collapse{{$switch.Name}}Rule{{$index_rule}}' class='accordion-collapse collapse' aria-labelledby='heading{{$switch.Name}}Rule{{$index_rule}}'
                                 data-bs-parent='#accordion{{$switch.Name}}'>
                                 <div class='accordion-body'>
                                     <strong>Table</strong><br>
@@ -128,18 +122,18 @@
                                         {{end}}
                                     </ul>
                                     {{ if not $rule.Parameters }}
-                                    <strong>No parameter required</strong><br><br>
+                                        <strong>No parameter required</strong><br><br>
                                     {{ else }}
-                                    <strong>Parameters</strong><br>
-                                    <ul>
-                                        {{ range $param := $rule.Parameters }}
-                                        <li>
-                                            {{ $param.Name }} (bit&lt;{{ $param.Bitwidth }}&gt;)
-                                        </li>
-                                        {{ end }}
-                                    </ul>
+                                        <strong>Parameters</strong><br>
+                                        <ul>
+                                            {{ range $param := $rule.Parameters }}
+                                            <li>
+                                                {{ $param.Name }} (bit&lt;{{ $param.Bitwidth }}&gt;)
+                                            </li>
+                                            {{ end }}
+                                        </ul>
                                     {{ end }}
-                                    <a href='addRule?switch={{$switch.Name}}&idTable={{$rule.Table.Id}}&idRule={{$rule.Id}}'><button class='btn btn-primary rounded-pill' type='submit'>Add new rule</button></a>
+                                    <a href='addRule?switch={{$switch.Name}}&idTable={{$rule.Table.Id}}&idRule={{$rule.Id}}'><button class='btn btn-primary rounded-pill'>Add new rule</button></a>
                                 </div>
                             </div>
                         </div>
