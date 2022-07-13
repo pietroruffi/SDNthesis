@@ -23,8 +23,7 @@ type Key struct {
 	Name     string
 	Match    string
 	Bitwidth int
-	//Target []string // add? useful?
-	Mask string
+	Mask     string
 }
 
 type Action struct {
@@ -51,8 +50,10 @@ type Program struct {
 }
 
 type RootPageData struct {
-	Switches     []Switch
-	ProgramNames []string
+	Switches       []Switch
+	ProgramNames   []string
+	ErrorMessage   string
+	SuccessMessage string
 }
 
 type AddRulePageData struct {
@@ -113,11 +114,6 @@ func getActionsByP4InfoJson(nameProgram string) []Action {
 
 		table := result["tables"].([]interface{})[i].(map[string]interface{})
 
-		// doesn't consider default tables (ones which starts with tbl_nameP4Program)
-		/*if strings.HasPrefix(table["name"].(string), "tbl_"+nameProgram) {
-			continue
-		}*/
-
 		preamble := table["preamble"].(map[string]interface{})
 		table_name := preamble["name"]
 		table_id := int(preamble["id"].(float64))
@@ -139,8 +135,7 @@ func getActionsByP4InfoJson(nameProgram string) []Action {
 				Name:     key["name"].(string),
 				Match:    key["matchType"].(string),
 				Bitwidth: int(key["bitwidth"].(float64)),
-				//Target: c["target"].([]string), // add? useful?
-				Mask: mask,
+				Mask:     mask,
 			})
 		}
 
@@ -170,13 +165,6 @@ func getActionsByP4InfoJson(nameProgram string) []Action {
 
 		action := (result["actions"].([]interface{})[index_actions]).(map[string]interface{})
 
-		// doesn't consider default tables (ones which starts with nameP4Program)
-		/*
-			if strings.HasPrefix(action["name"].(string), nameProgram) {
-				continue
-			}
-		*/
-
 		preamble := action["preamble"].(map[string]interface{})
 		action_name := preamble["name"]
 		action_id := int(preamble["id"].(float64))
@@ -196,7 +184,7 @@ func getActionsByP4InfoJson(nameProgram string) []Action {
 				})
 			}
 		}
-		// find table which contains actual action
+		// find table which contains actual action and then add the action
 
 		for _, action_table := range tables {
 
@@ -224,6 +212,9 @@ func getActionsByP4InfoJson(nameProgram string) []Action {
 func getRoot(w http.ResponseWriter, r *http.Request) {
 	fmt.Printf("got / request\n")
 
+	// TO-DO read available programs names
+	// and when doing this PARSE the .p4 in .p4.p4info.json
+	// REMEMBER!!
 	programNames := []string{"simple", "simple1", "asymmetric"}
 
 	var programs []Program
@@ -234,7 +225,7 @@ func getRoot(w http.ResponseWriter, r *http.Request) {
 			Actions: getActionsByP4InfoJson(prog),
 		})
 	}
-
+	// TO-DO read available switches
 	data := RootPageData{
 		Switches: []Switch{
 			{Name: "s1", Program: Program{
@@ -250,7 +241,9 @@ func getRoot(w http.ResponseWriter, r *http.Request) {
 				Actions: getActionsByP4InfoJson("simple1"),
 			}},
 		},
-		ProgramNames: programNames,
+		ProgramNames:   programNames,
+		SuccessMessage: successMessage,
+		ErrorMessage:   errorMessage,
 	}
 
 	tmpl := template.Must(template.ParseFiles("indexGo.html"))
@@ -260,6 +253,9 @@ func getRoot(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		fmt.Println(err)
 	}
+
+	successMessage = ""
+	errorMessage = ""
 }
 
 func addRule(w http.ResponseWriter, r *http.Request) {
@@ -272,31 +268,52 @@ func addRule(w http.ResponseWriter, r *http.Request) {
 	idTable, err := strconv.Atoi(r.URL.Query().Get("idTable"))
 
 	// Questo codice estrae le informazioni dalle POST
-	// CHANGE? Una volta finito rimandare alla pagina principale? La gestisco io la POST o qualcun altro?
 
-	/*
+	if r.Method == "POST" {
 		if err := r.ParseForm(); err != nil {
 			fmt.Println("ParseForm() err:", err)
 			return
 		}
-		fmt.Println("Post from website! r.PostFrom =", r.PostForm)
-		key1 := r.FormValue("key1")
-		par1 := r.FormValue("par1")
-		par2 := r.FormValue("par2")
 
-		fmt.Println(key1, par1, par2)
-	*/
-	data := AddRulePageData{
-		SwitchName: sw,
-		Rule:       *findActionByIdAndTable("asymmetric", idRule, idTable),
+		// TO-DO handle this request:
+		// 1) extract informations of actual rule
+		// 2) add new rule to switch sw
+		// 3) write a success/failure message on right variable
+		// 4) show index page by calling http.Redirect(w, r, "/", http.StatusSeeOther)
+
+		// REMEMBER add the program in execution on switch sw
+		action := findActionByIdAndTable("asymmetric", idRule, idTable)
+
+		var inputKeys []string
+
+		for _, key := range action.Table.Keys {
+			inputKeys = append(inputKeys, r.FormValue("key"+strconv.Itoa(key.Id)))
+		}
+
+		var inputParam []string
+		for _, par := range action.Parameters {
+			inputParam = append(inputParam, r.FormValue("par"+strconv.Itoa(par.Id)))
+		}
+
+		successMessage = "You successfully clicked on Add, good job!"
+
+		http.Redirect(w, r, "/", http.StatusSeeOther)
 	}
 
-	tmpl := template.Must(template.ParseFiles("addRuleGo.html"))
+	if r.Method == "GET" {
+		data := AddRulePageData{
+			SwitchName: sw,
+			// REMEMBER add the program in execution on switch sw
+			Rule: *findActionByIdAndTable("asymmetric", idRule, idTable),
+		}
 
-	err = tmpl.Execute(w, data)
+		tmpl := template.Must(template.ParseFiles("addRuleGo.html"))
 
-	if err != nil {
-		fmt.Println(err)
+		err = tmpl.Execute(w, data)
+
+		if err != nil {
+			fmt.Println(err)
+		}
 	}
 }
 
@@ -306,10 +323,12 @@ func executeProgram(w http.ResponseWriter, r *http.Request) {
 	// TO-DO handle this request:
 	// 1) change program in execution on switch
 	// 2) write a success/failure message on right variable
-	// 3) show index page by calling getRoot()
+	// 3) show index page by calling http.Redirect(w, r, "/", http.StatusSeeOther)
 
 	successMessage = "You successfully clicked on Execute, good job!"
-	getRoot(w, r)
+
+	http.Redirect(w, r, "/", http.StatusSeeOther)
+
 }
 
 func findActionByIdAndTable(program string, idAction int, idTable int) *Action {
