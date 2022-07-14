@@ -26,17 +26,17 @@ type Key struct {
 	Mask     string
 }
 
+type Parameter struct {
+	Id       int
+	Name     string
+	Bitwidth int
+}
+
 type Action struct {
 	Table      Table
 	Id         int
 	Name       string
 	Parameters []Parameter
-}
-
-type Parameter struct {
-	Id       int
-	Name     string
-	Bitwidth int
 }
 
 type Switch struct {
@@ -226,6 +226,7 @@ func getRoot(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 	// TO-DO read available switches
+
 	data := RootPageData{
 		Switches: []Switch{
 			{Name: "s1", Program: Program{
