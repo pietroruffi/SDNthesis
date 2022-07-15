@@ -19,10 +19,26 @@ const macRegexp = "([0-9a-fA-F]{2}[:-]){5}([0-9a-fA-F]{2})"
 
 type Rule struct {
 	Table       string
-	Key         string
+	Key         []string
 	Type        string
 	Action      string
 	ActionParam []string `yaml:"action_param"`
+	Describer   RuleDescriber
+}
+
+type RuleDescriber struct {
+	TableName    string
+	TableId      int
+	Keys         []FieldDescriber
+	ActionName   string
+	ActionId     int
+	ActionParams []FieldDescriber
+}
+
+type FieldDescriber struct {
+	Name     string
+	Bitwidth int
+	Pattern  string // Regex (optional), if present the parser will use this to discriminate which function parses this field
 }
 
 type SwitchConfig struct {
@@ -81,7 +97,7 @@ func parseSwConfig(swName string, configFileName string) (*SwitchConfig, error) 
 func createTableEntry(sw *GrpcSwitch, rule Rule) *p4_v1.TableEntry {
 	return sw.p4RtC.NewTableEntry(
 		rule.Table,
-		parseMatchInterface(rule.Type, rule.Key),
+		parseMatchInterface(rule.Type, rule.Key[0]),
 		sw.p4RtC.NewTableActionDirect(rule.Action, parseActionParams(rule.ActionParam)),
 		nil,
 	)

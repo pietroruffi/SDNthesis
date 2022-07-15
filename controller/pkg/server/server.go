@@ -12,31 +12,31 @@ import (
 )
 
 type Table struct {
-	Id         int
-	Name       string
-	Keys       []Key
-	ActionsIds []int
+	Id         int    `json:"id"`
+	Name       string `json:"name"`
+	Keys       []Key  `json:"keys"`
+	ActionsIds []int  `json:"action_ids"`
 }
 
 type Key struct {
-	Id       int
-	Name     string
-	Match    string
-	Bitwidth int
-	Mask     string
+	Id       int    `json:"id"`
+	Name     string `json:"name"`
+	Match    string `json:"match"`
+	Bitwidth int    `json:"bitwidth"`
+	Mask     string `json:"mask"`
 }
 
 type Parameter struct {
-	Id       int
-	Name     string
-	Bitwidth int
+	Id       int    `json:"id"`
+	Name     string `json:"name"`
+	Bitwidth int    `json:"bitwidth"`
 }
 
 type Action struct {
-	Table      Table
-	Id         int
-	Name       string
-	Parameters []Parameter
+	Table      Table       `json:"table"`
+	Id         int         `json:"id"`
+	Name       string      `json:"name"`
+	Parameters []Parameter `json:"parameters"`
 }
 
 type Switch struct {
@@ -169,8 +169,6 @@ func getActionsByP4InfoJson(nameProgram string) []Action {
 		action_name := preamble["name"]
 		action_id := int(preamble["id"].(float64))
 
-		//fmt.Print("\n\t", action, "\n\t", action_name, action_id, "\n\n")
-
 		var action_parameters []Parameter
 
 		if action["params"] != nil {
@@ -206,6 +204,12 @@ func getActionsByP4InfoJson(nameProgram string) []Action {
 			fmt.Println("[DEBUG-ACTIONS]", actions[ac])
 		}
 	*/
+
+	fmt.Println(nameProgram)
+
+	data, _ := json.Marshal(actions)
+	fmt.Println(string(data))
+
 	return actions
 }
 
