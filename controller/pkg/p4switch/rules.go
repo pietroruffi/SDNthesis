@@ -29,6 +29,7 @@ type Rule struct {
 type RuleDescriber struct {
 	TableName    string
 	TableId      int
+	MatchType    string
 	Keys         []FieldDescriber
 	ActionName   string
 	ActionId     int
@@ -38,7 +39,8 @@ type RuleDescriber struct {
 type FieldDescriber struct {
 	Name     string
 	Bitwidth int
-	Pattern  string // Regex (optional), if present the parser will use this to discriminate which function parses this field
+	Mask     string // (optional) used in ternary match, ex. "value: 10.0.0.1" "mask: 0xFFFFFF00"
+	Pattern  string // (optional), if present the parser will use this to discriminate which function parses this field
 }
 
 type SwitchConfig struct {
@@ -95,10 +97,12 @@ func parseSwConfig(swName string, configFileName string) (*SwitchConfig, error) 
 }
 
 func createTableEntry(sw *GrpcSwitch, rule Rule) *p4_v1.TableEntry {
+	parserMatch := getParserForMatchInterface(rule.Type)
+	parserActParam := getParserForActionParams("default")
 	return sw.p4RtC.NewTableEntry(
 		rule.Table,
-		parseMatchInterface(rule.Type, rule.Key[0]),
-		sw.p4RtC.NewTableActionDirect(rule.Action, parseActionParams(rule.ActionParam)),
+		parserMatch.parse(rule.Key, rule.Describer.Keys),
+		sw.p4RtC.NewTableActionDirect(rule.Action, parserActParam.parse(rule.ActionParam, rule.Describer.ActionParams)),
 		nil,
 	)
 }
@@ -118,8 +122,9 @@ func parseActionParams(actionParams []string) [][]byte {
 	return actionByte
 }
 
-func parseMatchInterface(matchType string, key string) []client.MatchInterface {
+func parseMatchInterface(matchType string, keys []string) []client.MatchInterface {
 	//var matchInterface p4_v1.FieldMatch
+	key := keys[0]
 	switch matchType {
 	case "exact":
 		ip, err := conversion.IpToBinary(key)
