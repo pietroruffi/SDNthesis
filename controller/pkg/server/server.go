@@ -140,10 +140,11 @@ func addRule(w http.ResponseWriter, r *http.Request) {
 		}*/
 
 	if r.Method == "GET" {
+		actualSwitch := getSwitchByName(sw)
+
 		data := AddRulePageData{
 			SwitchName: sw,
-			// REMEMBER add the program in execution on switch sw
-			Rule: *findActionByIdAndTable("asymmetric", idAction, idTable),
+			Rule:       *findActionByIdAndTable(actualSwitch.GetProgramName(), idAction, idTable),
 		}
 
 		tmpl := template.Must(template.ParseFiles(serverPath + "addRuleGo.html"))
@@ -154,6 +155,15 @@ func addRule(w http.ResponseWriter, r *http.Request) {
 			fmt.Println(err)
 		}
 	}
+}
+
+func getSwitchByName(name string) *p4switch.GrpcSwitch {
+	for _, sw := range allSwitches {
+		if sw.GetName() == name {
+			return sw
+		}
+	}
+	return nil
 }
 
 func executeProgram(w http.ResponseWriter, r *http.Request) {
