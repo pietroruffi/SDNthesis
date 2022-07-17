@@ -71,7 +71,7 @@ func main() {
 		return
 	}
 
-	server.StartServer()
+	server.StartServer(switchs)
 
 	// Quando qualcuno preme invio cambio configurazione allo switch
 

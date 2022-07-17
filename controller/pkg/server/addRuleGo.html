@@ -80,9 +80,9 @@
                             {{ if eq $i 0 }}
                             <label class='form-label'><strong>Key</strong></label>
                             {{ end }}
-                            <label for='key{{$key.Id}}' class='col-sm-5 col-form-label'>{{ $key.Name }} (bit&lt;{{ $key.Bitwidth }}&gt;)</label>
+                            <label for='key{{$i}}' class='col-sm-5 col-form-label'>{{ $key.Name }} (bit&lt;{{ $key.Bitwidth }}&gt;)</label>
                             <div class='col-sm-7'>
-                                <input type='text' class='form-control' name='key{{$key.Id}}' id='key{{$key.Id}}'>
+                                <input type='text' class='form-control' name='key{{$i}}' id='key{{$i}}'>
                             </div>
                         </div>
                         {{end}}
@@ -91,9 +91,9 @@
                             {{ if eq $i 0 }}
                             <label class='form-label'><strong>Parameters</strong></label>
                             {{ end }}
-                            <label for='par{{$par.Id}}' class='col-sm-5 col-form-label'>{{ $par.Name }} (bit&lt;{{ $par.Bitwidth }}&gt;)</label>
+                            <label for='par{{$i}}' class='col-sm-5 col-form-label'>{{ $par.Name }} (bit&lt;{{ $par.Bitwidth }}&gt;)</label>
                             <div class='col-sm-7'>
-                                <input type='text' class='form-control' name='par{{$par.Id}}' id='par{{$par.Id}}'>
+                                <input type='text' class='form-control' name='par{{$i}}' id='par{{$i}}'>
                             </div>
                         </div>
                         {{ end }}     

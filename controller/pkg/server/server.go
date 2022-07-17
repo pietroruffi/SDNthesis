@@ -38,7 +38,11 @@ const (
 var errorMessage string
 var successMessage string
 
-func StartServer() {
+var allSwitches []*p4switch.GrpcSwitch
+
+func StartServer(switches []*p4switch.GrpcSwitch) {
+	allSwitches = switches
+
 	http.HandleFunc("/", getRoot)
 	http.HandleFunc("/addRule", addRule)
 	http.HandleFunc("/executeProgram", executeProgram)
@@ -63,24 +67,18 @@ func getRoot(w http.ResponseWriter, r *http.Request) {
 
 	// TO-DO read available switches
 
+	var swData []SwitchServerData
+
+	for _, sw := range allSwitches {
+		swData = append(swData, SwitchServerData{
+			Name:           sw.GetName(),
+			ProgramName:    sw.GetProgramName(),
+			ProgramActions: getDescribersForProgram(sw.GetProgramName()),
+		})
+	}
+
 	data := RootPageData{
-		Switches: []SwitchServerData{
-			{
-				Name:           "s1",
-				ProgramName:    "simple",
-				ProgramActions: getDescribersForProgram("simple"),
-			},
-			{
-				Name:           "s2",
-				ProgramName:    "simple1",
-				ProgramActions: getDescribersForProgram("simple1"),
-			},
-			{
-				Name:           "s2",
-				ProgramName:    "simple1",
-				ProgramActions: getDescribersForProgram("simple1"),
-			},
-		},
+		Switches:       swData,
 		ProgramNames:   programNames,
 		SuccessMessage: successMessage,
 		ErrorMessage:   errorMessage,
@@ -144,8 +142,7 @@ func addRule(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "GET" {
 		data := AddRulePageData{
 			SwitchName: sw,
-			// REMEMBER add the program in execution on switch sw -
-
+			// REMEMBER add the program in execution on switch sw
 			Rule: *findActionByIdAndTable("asymmetric", idAction, idTable),
 		}
 
