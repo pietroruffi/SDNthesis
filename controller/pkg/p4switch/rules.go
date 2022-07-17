@@ -97,6 +97,8 @@ func parseSwConfig(swName string, configFileName string) (*SwitchConfig, error) 
 }
 
 func createTableEntry(sw *GrpcSwitch, rule Rule) *p4_v1.TableEntry {
+	rule.Describer = *getDescriberFor(sw.GetProgramName(), rule)
+
 	parserMatch := getParserForMatchInterface(rule.Type)
 	parserActParam := getParserForActionParams("default")
 	return sw.p4RtC.NewTableEntry(
