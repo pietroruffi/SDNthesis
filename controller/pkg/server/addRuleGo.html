@@ -66,13 +66,13 @@
                         <div class='mb-3 row'>
                             <label for='staticTable' class='col-sm-2 col-form-label'><strong>Table</strong></label>
                             <div class='col-sm-10'>
-                                <input type='text' readonly class='form-control-plaintext' id='staticTable' value='{{.Rule.Table.Name}}'>
+                                <input type='text' readonly class='form-control-plaintext' id='staticTable' value='{{.Rule.TableName}}'>
                             </div>
                         </div>
                         <div class='mb-3 row'>
                             <label for='staticRule' class='col-sm-2 col-form-label'><strong>Rule</strong></label>
                             <div class='col-sm-10'>
-                                <input type='text' readonly class='form-control-plaintext' id='staticRule' value='{{.Rule.Name}}'>
+                                <input type='text' readonly class='form-control-plaintext' id='staticRule' value='{{.Rule.ActionName}}'>
                             </div>
                         </div>
                         {{ range $i, $key := .Rule.Keys }}
