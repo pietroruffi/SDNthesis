@@ -75,7 +75,7 @@
                                 <input type='text' readonly class='form-control-plaintext' id='staticRule' value='{{.Rule.Name}}'>
                             </div>
                         </div>
-                        {{ range $i, $key := .Rule.Table.Keys }}
+                        {{ range $i, $key := .Rule.Keys }}
                         <div class='mb-3 row'>
                             {{ if eq $i 0 }}
                             <label class='form-label'><strong>Key</strong></label>
@@ -86,12 +86,12 @@
                             </div>
                         </div>
                         {{end}}
-                        {{ range $i, $par := .Rule.Parameters }}
+                        {{ range $i, $par := .Rule.ActionParams }}
                         <div class='mb-3 row'>
                             {{ if eq $i 0 }}
                             <label class='form-label'><strong>Parameters</strong></label>
                             {{ end }}
-                            <label for='par{{$par.Id}}' class='col-sm-5 col-form-label'>{{$par.Name}} (bit&lt;{{$par.Bitwidth}}&gt;)</label>
+                            <label for='par{{$par.Id}}' class='col-sm-5 col-form-label'>{{ $par.Name }} (bit&lt;{{ $par.Bitwidth }}&gt;)</label>
                             <div class='col-sm-7'>
                                 <input type='text' class='form-control' name='par{{$par.Id}}' id='par{{$par.Id}}'>
                             </div>
