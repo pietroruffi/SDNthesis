@@ -11,6 +11,7 @@ import (
 	"google.golang.org/grpc/status"
 
 	"controller/pkg/p4switch"
+	//"controller/pkg/server"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -70,12 +71,14 @@ func main() {
 		return
 	}
 
+	//server.StartServer()
+
 	// Quando qualcuno preme invio cambio configurazione allo switch
 
 	buff := make([]byte, 10)
 	n, _ := os.Stdin.Read(buff)
 	newConfig := configName // configName e configNameAlt passati come parametro di invocazione
-	for n > 0 {             // while true
+	for n > 0 {             // while "true"
 		if newConfig == configName {
 			newConfig = configNameAlt
 		} else {

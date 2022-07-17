@@ -1,56 +1,24 @@
-package main
+package server
 
 import (
+	"controller/pkg/p4switch"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"html/template"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"strconv"
 )
 
-type Table struct {
-	Id         int    `json:"id"`
-	Name       string `json:"name"`
-	Keys       []Key  `json:"keys"`
-	ActionsIds []int  `json:"action_ids"`
-}
-
-type Key struct {
-	Id       int    `json:"id"`
-	Name     string `json:"name"`
-	Match    string `json:"match"`
-	Bitwidth int    `json:"bitwidth"`
-	Mask     string `json:"mask"`
-}
-
-type Parameter struct {
-	Id       int    `json:"id"`
-	Name     string `json:"name"`
-	Bitwidth int    `json:"bitwidth"`
-}
-
-type Action struct {
-	Table      Table       `json:"table"`
-	Id         int         `json:"id"`
-	Name       string      `json:"name"`
-	Parameters []Parameter `json:"parameters"`
-}
-
-type Switch struct {
-	Name    string
-	Program Program
-}
-
-type Program struct {
-	Name    string
-	Actions []Action
+type SwitchServerData struct {
+	Name           string
+	ProgramName    string
+	ProgramActions []p4switch.RuleDescriber
 }
 
 type RootPageData struct {
-	Switches       []Switch
+	Switches       []SwitchServerData
 	ProgramNames   []string
 	ErrorMessage   string
 	SuccessMessage string
@@ -58,24 +26,23 @@ type RootPageData struct {
 
 type AddRulePageData struct {
 	SwitchName string
-	Rule       Action
+	Rule       p4switch.RuleDescriber
 }
 
 const (
-	path         = "../../../p4/"
-	pathJsonInfo = "../../../p4/JsonOfP4info/"
-	ext          = ".json"
+	pathJsonInfo = "../p4/JsonOfP4info/"
 	extJsonInfo  = ".p4.p4info.json"
+	serverPath   = "./pkg/server/"
 )
 
 var errorMessage string
 var successMessage string
 
-func main() {
+func StartServer() {
 	http.HandleFunc("/", getRoot)
 	http.HandleFunc("/addRule", addRule)
 	http.HandleFunc("/executeProgram", executeProgram)
-	http.Handle("/web/", http.StripPrefix("/web/", http.FileServer(http.Dir("web"))))
+	http.Handle("/web/", http.StripPrefix("/web/", http.FileServer(http.Dir(serverPath+"web"))))
 
 	err := http.ListenAndServe(":3333", nil)
 	if errors.Is(err, http.ErrServerClosed) {
@@ -86,133 +53,6 @@ func main() {
 	}
 }
 
-func getActionsByP4InfoJson(nameProgram string) []Action {
-
-	// TO-DO save actions in static variable so u don't have to read the files every time
-
-	filename := pathJsonInfo + nameProgram + extJsonInfo
-
-	jsonFile, err := os.Open(filename)
-
-	if err != nil {
-		fmt.Println(err)
-		return nil
-	}
-	fmt.Print("[DEBUG] Successfully Opened ", filename, "\n\n")
-
-	defer jsonFile.Close()
-
-	byteValue, _ := ioutil.ReadAll(jsonFile)
-
-	var result map[string]interface{}
-
-	json.Unmarshal([]byte(byteValue), &result)
-
-	var tables []Table
-
-	for i := range result["tables"].([]interface{}) {
-
-		table := result["tables"].([]interface{})[i].(map[string]interface{})
-
-		preamble := table["preamble"].(map[string]interface{})
-		table_name := preamble["name"]
-		table_id := int(preamble["id"].(float64))
-
-		var talbe_keys []Key
-
-		for index_keys := range table["matchFields"].([]interface{}) {
-
-			key := table["matchFields"].([]interface{})[index_keys].(map[string]interface{})
-
-			// mask can either be present or not
-			var mask string
-			if key["mask"] != nil {
-				mask = key["mask"].(string)
-			}
-
-			talbe_keys = append(talbe_keys, Key{
-				Id:       int(key["id"].(float64)),
-				Name:     key["name"].(string),
-				Match:    key["matchType"].(string),
-				Bitwidth: int(key["bitwidth"].(float64)),
-				Mask:     mask,
-			})
-		}
-
-		var actions_ids []int
-		for _, action_id := range table["actionRefs"].([]interface{}) {
-			actions_ids = append(actions_ids, int(action_id.(map[string]interface{})["id"].(float64)))
-		}
-
-		tables = append(tables, Table{
-			Id:         table_id,
-			Name:       table_name.(string),
-			Keys:       talbe_keys,
-			ActionsIds: actions_ids,
-		})
-	}
-	/*
-		for _, ta := range tables {
-			fmt.Println("[DEBUG-TABLES]", ta)
-		}
-		fmt.Print("\n")
-	*/
-	// Extract actions informations
-
-	var actions []Action
-
-	for index_actions := range result["actions"].([]interface{}) {
-
-		action := (result["actions"].([]interface{})[index_actions]).(map[string]interface{})
-
-		preamble := action["preamble"].(map[string]interface{})
-		action_name := preamble["name"]
-		action_id := int(preamble["id"].(float64))
-
-		var action_parameters []Parameter
-
-		if action["params"] != nil {
-			for index_parameters := range action["params"].([]interface{}) {
-				parameter := action["params"].([]interface{})[index_parameters].(map[string]interface{})
-
-				action_parameters = append(action_parameters, Parameter{
-					Id:       int(parameter["id"].(float64)),
-					Name:     parameter["name"].(string),
-					Bitwidth: int(parameter["bitwidth"].(float64)),
-				})
-			}
-		}
-		// find table which contains actual action and then add the action
-
-		for _, action_table := range tables {
-
-			if integer_contains(action_table.ActionsIds, action_id) {
-
-				actions = append(actions, Action{
-					Table:      action_table,
-					Id:         action_id,
-					Name:       action_name.(string),
-					Parameters: action_parameters,
-				})
-
-			}
-		}
-
-	}
-	/*
-		for ac := range actions {
-			fmt.Println("[DEBUG-ACTIONS]", actions[ac])
-		}
-	*/
-
-	fmt.Println(nameProgram)
-
-	data, _ := json.Marshal(actions)
-	fmt.Println(string(data))
-
-	return actions
-}
-
 func getRoot(w http.ResponseWriter, r *http.Request) {
 	fmt.Printf("got / request\n")
 
@@ -221,37 +61,32 @@ func getRoot(w http.ResponseWriter, r *http.Request) {
 	// REMEMBER!!
 	programNames := []string{"simple", "simple1", "asymmetric"}
 
-	var programs []Program
-
-	for _, prog := range programNames {
-		programs = append(programs, Program{
-			Name:    prog,
-			Actions: getActionsByP4InfoJson(prog),
-		})
-	}
 	// TO-DO read available switches
 
 	data := RootPageData{
-		Switches: []Switch{
-			{Name: "s1", Program: Program{
-				Name:    "simple",
-				Actions: getActionsByP4InfoJson("simple"),
-			}},
-			{Name: "s2", Program: Program{
-				Name:    "asymmetric",
-				Actions: getActionsByP4InfoJson("asymmetric"),
-			}},
-			{Name: "s3", Program: Program{
-				Name:    "simple1",
-				Actions: getActionsByP4InfoJson("simple1"),
-			}},
+		Switches: []SwitchServerData{
+			{
+				Name:           "s1",
+				ProgramName:    "simple",
+				ProgramActions: getDescribersForProgram("simple"),
+			},
+			{
+				Name:           "s2",
+				ProgramName:    "simple1",
+				ProgramActions: getDescribersForProgram("simple1"),
+			},
+			{
+				Name:           "s2",
+				ProgramName:    "simple1",
+				ProgramActions: getDescribersForProgram("simple1"),
+			},
 		},
 		ProgramNames:   programNames,
 		SuccessMessage: successMessage,
 		ErrorMessage:   errorMessage,
 	}
 
-	tmpl := template.Must(template.ParseFiles("indexGo.html"))
+	tmpl := template.Must(template.ParseFiles(serverPath + "indexGo.html"))
 
 	err := tmpl.Execute(w, data)
 
@@ -268,51 +103,53 @@ func addRule(w http.ResponseWriter, r *http.Request) {
 
 	sw := r.URL.Query().Get("switch")
 
-	idRule, err := strconv.Atoi(r.URL.Query().Get("idRule"))
+	idAction, err := strconv.Atoi(r.URL.Query().Get("idAction"))
 
 	idTable, err := strconv.Atoi(r.URL.Query().Get("idTable"))
 
 	// Questo codice estrae le informazioni dalle POST
 
-	if r.Method == "POST" {
-		if err := r.ParseForm(); err != nil {
-			fmt.Println("ParseForm() err:", err)
-			return
-		}
+	/*
+		if r.Method == "POST" {
+			if err := r.ParseForm(); err != nil {
+				fmt.Println("ParseForm() err:", err)
+				return
+			}
 
-		// TO-DO handle this request:
-		// 1) extract informations of actual rule
-		// 2) add new rule to switch sw
-		// 3) write a success/failure message on right variable
-		// 4) show index page by calling http.Redirect(w, r, "/", http.StatusSeeOther)
+			// TO-DO handle this request:
+			// 1) extract informations of actual rule
+			// 2) add new rule to switch sw
+			// 3) write a success/failure message on right variable
+			// 4) show index page by calling http.Redirect(w, r, "/", http.StatusSeeOther)
 
-		// REMEMBER add the program in execution on switch sw
-		action := findActionByIdAndTable("asymmetric", idRule, idTable)
+			// REMEMBER add the program in execution on switch sw
+			action := findActionByIdAndTable("asymmetric", idAction, idTable)
 
-		var inputKeys []string
+			var inputKeys []string
 
-		for _, key := range action.Table.Keys {
-			inputKeys = append(inputKeys, r.FormValue("key"+strconv.Itoa(key.Id)))
-		}
+			for _, key := range action.Table.Keys {
+				inputKeys = append(inputKeys, r.FormValue("key"+strconv.Itoa(key.Id)))
+			}
 
-		var inputParam []string
-		for _, par := range action.Parameters {
-			inputParam = append(inputParam, r.FormValue("par"+strconv.Itoa(par.Id)))
-		}
+			var inputParam []string
+			for _, par := range action.Parameters {
+				inputParam = append(inputParam, r.FormValue("par"+strconv.Itoa(par.Id)))
+			}
 
-		successMessage = "You successfully clicked on Add, good job!"
+			successMessage = "You successfully clicked on Add, good job!"
 
-		http.Redirect(w, r, "/", http.StatusSeeOther)
-	}
+			http.Redirect(w, r, "/", http.StatusSeeOther)
+		}*/
 
 	if r.Method == "GET" {
 		data := AddRulePageData{
 			SwitchName: sw,
-			// REMEMBER add the program in execution on switch sw
-			Rule: *findActionByIdAndTable("asymmetric", idRule, idTable),
+			// REMEMBER add the program in execution on switch sw -
+
+			Rule: *findActionByIdAndTable("asymmetric", idAction, idTable),
 		}
 
-		tmpl := template.Must(template.ParseFiles("addRuleGo.html"))
+		tmpl := template.Must(template.ParseFiles(serverPath + "addRuleGo.html"))
 
 		err = tmpl.Execute(w, data)
 
@@ -336,20 +173,21 @@ func executeProgram(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func findActionByIdAndTable(program string, idAction int, idTable int) *Action {
-	for _, action := range getActionsByP4InfoJson(program) {
-		if action.Id == idAction && action.Table.Id == idTable {
+func getDescribersForProgram(p4ProgramName string) []p4switch.RuleDescriber {
+	res := *p4switch.ParseP4Info(p4ProgramName)
+
+	var describers []p4switch.RuleDescriber
+
+	json.Unmarshal([]byte(res), &describers)
+
+	return describers
+}
+
+func findActionByIdAndTable(program string, idAction int, idTable int) *p4switch.RuleDescriber {
+	for _, action := range getDescribersForProgram(program) {
+		if action.ActionId == idAction && action.TableId == idTable {
 			return &action
 		}
 	}
 	return nil
-}
-
-func integer_contains(array []int, content int) bool {
-	for _, el := range array {
-		if el == content {
-			return true
-		}
-	}
-	return false
 }

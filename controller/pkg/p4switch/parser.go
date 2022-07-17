@@ -16,7 +16,7 @@ const (
 	pattern_mac_addr  = "mac_address"
 	pattern_port      = "port"
 
-	pathJsonInfo = "../../../p4/JsonOfP4info/"
+	pathJsonInfo = "../p4/JsonOfP4info/"
 	extJsonInfo  = ".p4.p4info.json"
 )
 
@@ -211,7 +211,7 @@ func getParserForActionParams(parserType string) ParserActionParams {
 	return ParserActionParams(&DefaultParserActionParams{})
 }
 
-func parseP4Info(p4Program string) *string { // return json of []RuleDescriber
+func ParseP4Info(p4Program string) *string { // return json of []RuleDescriber
 
 	filename := pathJsonInfo + p4Program + extJsonInfo
 
@@ -338,7 +338,7 @@ func parseP4Info(p4Program string) *string { // return json of []RuleDescriber
 // Returns a describer for an already defined rule, basing the research on ActionName and TableName
 func getDescriberFor(p4Program string, rule Rule) *RuleDescriber {
 
-	res := *parseP4Info(p4Program)
+	res := *ParseP4Info(p4Program)
 
 	var describers []RuleDescriber
 
@@ -353,7 +353,7 @@ func getDescriberFor(p4Program string, rule Rule) *RuleDescriber {
 	return nil
 }
 
-// Returns pattern if the field respects a known one, using that parsers can know how to properly parse the field
+// Returns pattern if the field respects a known one, using that the parsers can know how to properly parse the field
 func findIfKnownPattern(name string, bitwidth int) string {
 	if strings.Contains(strings.ToLower(name), "port") {
 		return pattern_port

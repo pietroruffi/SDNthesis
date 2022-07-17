@@ -4,7 +4,7 @@ singlesw-config = ../config/singlesw-config.yml
 singlesw-alt = ../config/singlesw-config-alt.yml
 3sw-config = ../config/3sw-config.yml
 
-all: debug
+all: singlesw
 singlesw:
 	go run cmd/main.go -n 1 -config $(singlesw-config) -config-alt $(singlesw-alt) -verbose
 3sw:

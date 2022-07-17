@@ -3,7 +3,7 @@ topology = topology.json
 singlesw = singlesw-topo.json
 3sw = 3sw-topology.json
 
-1all: mininet
+1all: singlesw
 singlesw:
 	sudo python3 run_mininet.py --p4-file ../p4/$(p4program).p4 --topology ../config/$(singlesw)
 3sw:
