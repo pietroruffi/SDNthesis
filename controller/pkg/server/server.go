@@ -89,7 +89,7 @@ func getRoot(w http.ResponseWriter, r *http.Request) {
 		ErrorMessage:   errorMessage,
 	}
 
-	tmpl := template.Must(template.ParseFiles(serverPath + "indexGo.html"))
+	tmpl := template.Must(template.ParseFiles(serverPath + "index.html"))
 
 	err := tmpl.Execute(w, data)
 
@@ -159,7 +159,7 @@ func addRule(w http.ResponseWriter, r *http.Request) {
 			Rule:       *findActionByIdAndTable(actualSwitch.GetProgramName(), idAction, idTable),
 		}
 
-		tmpl := template.Must(template.ParseFiles(serverPath + "addRuleGo.html"))
+		tmpl := template.Must(template.ParseFiles(serverPath + "addRule.html"))
 
 		err = tmpl.Execute(w, data)
 

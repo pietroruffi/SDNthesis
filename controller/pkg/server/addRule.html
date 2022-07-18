@@ -75,10 +75,11 @@
                                 <input type='text' readonly class='form-control-plaintext' id='staticRule' value='{{.Rule.ActionName}}'>
                             </div>
                         </div>
-                        {{ range $i, $key := .Rule.Keys }}
+                        {{ $rule := .Rule }}
+                        {{ range $i, $key := $rule.Keys }}
                         <div class='mb-3 row'>
                             {{ if eq $i 0 }}
-                            <label class='form-label'><strong>Key (match type: {{ .Rule.MatchType }})</strong></label>
+                            <label class='form-label'><strong>Key (match type: {{ $rule.MatchType }})</strong></label>
                             {{ end }}
                             <label for='key{{$i}}' class='col-sm-5 col-form-label'>{{ $key.Name }} (bit&lt;{{ $key.Bitwidth }}&gt;)</label>
                             <div class='col-sm-7'>
@@ -86,7 +87,7 @@
                             </div>
                         </div>
                         {{end}}
-                        {{ range $i, $par := .Rule.ActionParams }}
+                        {{ range $i, $par := $rule.ActionParams }}
                         <div class='mb-3 row'>
                             {{ if eq $i 0 }}
                             <label class='form-label'><strong>Parameters</strong></label>
