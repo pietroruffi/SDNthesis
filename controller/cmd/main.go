@@ -11,7 +11,7 @@ import (
 	"google.golang.org/grpc/status"
 
 	"controller/pkg/p4switch"
-	"controller/pkg/server"
+	//"controller/pkg/server"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -71,7 +71,7 @@ func main() {
 		return
 	}
 
-	server.StartServer(switchs)
+	//server.StartServer(switchs)
 
 	// Quando qualcuno preme invio cambio configurazione allo switch
 
@@ -87,6 +87,9 @@ func main() {
 		log.Infof("Changing switch config to %s", newConfig)
 		for _, sw := range switchs {
 			go changeConfig(ctx, sw, newConfig)
+		}
+		for _, sw := range switchs {
+			log.Info("Program on switch " + sw.GetName() + ": " + sw.GetProgramName())
 		}
 		log.Info("Press enter to change switch config or EOF to terminate")
 		n, _ = os.Stdin.Read(buff)
