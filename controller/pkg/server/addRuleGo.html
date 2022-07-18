@@ -78,7 +78,7 @@
                         {{ range $i, $key := .Rule.Keys }}
                         <div class='mb-3 row'>
                             {{ if eq $i 0 }}
-                            <label class='form-label'><strong>Key</strong></label>
+                            <label class='form-label'><strong>Key (match type: {{ .Rule.MatchType }})</strong></label>
                             {{ end }}
                             <label for='key{{$i}}' class='col-sm-5 col-form-label'>{{ $key.Name }} (bit&lt;{{ $key.Bitwidth }}&gt;)</label>
                             <div class='col-sm-7'>

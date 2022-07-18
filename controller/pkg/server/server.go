@@ -13,6 +13,8 @@ import (
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+
+	log "github.com/sirupsen/logrus"
 )
 
 type SwitchServerData struct {
@@ -52,11 +54,12 @@ func StartServer(switches []*p4switch.GrpcSwitch) {
 	http.HandleFunc("/executeProgram", executeProgram)
 	http.Handle("/web/", http.StripPrefix("/web/", http.FileServer(http.Dir(serverPath+"web"))))
 
+	log.Infof("Server listening on localhost:3333")
 	err := http.ListenAndServe(":3333", nil)
 	if errors.Is(err, http.ErrServerClosed) {
-		fmt.Printf("server closed\n")
+		log.Infof("server closed\n")
 	} else if err != nil {
-		fmt.Printf("error starting server: %s\n", err)
+		log.Errorf("Error starting server: %s\n", err)
 		os.Exit(1)
 	}
 }
@@ -68,8 +71,6 @@ func getRoot(w http.ResponseWriter, r *http.Request) {
 	// and when doing this PARSE the .p4 in .p4.p4info.json
 	// REMEMBER!!
 	programNames := []string{"simple", "simple1", "asymmetric"}
-
-	// TO-DO read available switches
 
 	var swData []SwitchServerData
 

@@ -11,7 +11,7 @@ import (
 	"google.golang.org/grpc/status"
 
 	"controller/pkg/p4switch"
-	//"controller/pkg/server"
+	"controller/pkg/server"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -71,7 +71,7 @@ func main() {
 		return
 	}
 
-	//server.StartServer(switchs)
+	server.StartServer(switchs)
 
 	// Quando qualcuno preme invio cambio configurazione allo switch
 
