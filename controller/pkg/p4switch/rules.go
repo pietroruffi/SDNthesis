@@ -50,6 +50,17 @@ func (sw *GrpcSwitch) AddToInstalledRules(rule Rule) {
 	sw.installedRules = append(sw.installedRules, rule)
 }
 
+func (sw *GrpcSwitch) RemoveFromInstalledRules(idx int) {
+	// CHANGE do better :-)
+	var newRules []Rule
+	for i, rule := range sw.installedRules {
+		if i != idx {
+			newRules = append(newRules, rule)
+		}
+	}
+	sw.installedRules = newRules
+}
+
 func (sw *GrpcSwitch) GetProgramName() string {
 	config, err := parseSwConfig(sw.GetName(), sw.configName)
 	if err != nil {

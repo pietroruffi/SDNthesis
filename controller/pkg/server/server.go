@@ -21,6 +21,7 @@ type SwitchServerData struct {
 	Name           string
 	ProgramName    string
 	ProgramActions []p4switch.RuleDescriber
+	InstalledRules []p4switch.Rule
 }
 
 type RootPageData struct {
@@ -51,7 +52,9 @@ func StartServer(switches []*p4switch.GrpcSwitch) {
 
 	http.HandleFunc("/", getRoot)
 	http.HandleFunc("/addRule", addRule)
+	http.HandleFunc("/removeRule", removeRule)
 	http.HandleFunc("/executeProgram", executeProgram)
+
 	http.Handle("/web/", http.StripPrefix("/web/", http.FileServer(http.Dir(serverPath+"web"))))
 
 	log.Infof("Server listening on localhost:3333")
@@ -79,6 +82,7 @@ func getRoot(w http.ResponseWriter, r *http.Request) {
 			Name:           sw.GetName(),
 			ProgramName:    sw.GetProgramName(),
 			ProgramActions: getDescribersForProgram(sw.GetProgramName()),
+			InstalledRules: sw.GetInstalledRules(),
 		})
 	}
 
@@ -174,6 +178,29 @@ func addRule(w http.ResponseWriter, r *http.Request) {
 			fmt.Println(err)
 		}
 	}
+}
+
+func removeRule(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("got /removeRule request")
+
+	swName := r.URL.Query().Get("switch")
+
+	sw := getSwitchByName(swName)
+	numRule, _ := strconv.Atoi(r.URL.Query().Get("number"))
+
+	toDelete := sw.GetInstalledRules()[numRule]
+
+	res := sw.RemoveTableEntry(p4switch.CreateTableEntry(sw, toDelete))
+
+	if res != nil {
+		errorMessage = "Failed to delete entry: " + res.Error()
+	} else {
+		successMessage = "Entry deleted with success"
+		sw.RemoveFromInstalledRules(numRule)
+	}
+
+	http.Redirect(w, r, "/", http.StatusSeeOther)
+
 }
 
 func executeProgram(w http.ResponseWriter, r *http.Request) {

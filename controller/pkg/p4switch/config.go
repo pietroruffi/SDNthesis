@@ -49,6 +49,17 @@ func (sw *GrpcSwitch) AddTableEntry(entry *p4_v1.TableEntry) error {
 	return nil
 }
 
+func (sw *GrpcSwitch) RemoveTableEntry(entry *p4_v1.TableEntry) error {
+	if err := sw.p4RtC.DeleteTableEntry(entry); err != nil { // InsertTableEntry in client/tables.go, sfrutta API di p4_v1 per inserire l'entry
+		sw.log.Errorf("Error adding entry: %+v\n%v", entry, err)
+		sw.errCh <- err
+		return err
+	}
+	sw.log.Tracef("Added entry: %+v", entry)
+
+	return nil
+}
+
 func (sw *GrpcSwitch) addRules() {
 	entries := GetAllTableEntries(sw) // GetAllTableEntries in rules.go, legge le regole dal file di configurazione .yml
 	for _, entry := range entries {
