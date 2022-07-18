@@ -68,7 +68,7 @@ func GetAllTableEntries(sw *GrpcSwitch) []*p4_v1.TableEntry {
 		return tableEntries
 	}
 	for _, rule := range config.Rules {
-		tableEntries = append(tableEntries, createTableEntry(sw, rule))
+		tableEntries = append(tableEntries, CreateTableEntry(sw, rule))
 	}
 	return tableEntries
 }
@@ -89,7 +89,7 @@ func parseSwConfig(swName string, configFileName string) (*SwitchConfig, error) 
 	return &config, nil
 }
 
-func createTableEntry(sw *GrpcSwitch, rule Rule) *p4_v1.TableEntry {
+func CreateTableEntry(sw *GrpcSwitch, rule Rule) *p4_v1.TableEntry {
 	rule.Describer = *getDescriberFor(sw.GetProgramName(), rule)
 
 	parserMatch := getParserForMatchInterface(rule.Type)

@@ -38,8 +38,8 @@ func (sw *GrpcSwitch) ChangeConfigSync(configName string) error {
 	return nil
 }
 
-func (sw *GrpcSwitch) addTableEntry(entry *p4_v1.TableEntry) {
-	if err := sw.p4RtC.InsertTableEntry(entry); err != nil {	// InsertTableEntry in client/tables.go, sfrutta API di p4_v1 per inserire l'entry
+func (sw *GrpcSwitch) AddTableEntry(entry *p4_v1.TableEntry) {
+	if err := sw.p4RtC.InsertTableEntry(entry); err != nil { // InsertTableEntry in client/tables.go, sfrutta API di p4_v1 per inserire l'entry
 		sw.log.Errorf("Error adding entry: %+v\n%v", entry, err)
 		sw.errCh <- err
 		return
@@ -47,10 +47,10 @@ func (sw *GrpcSwitch) addTableEntry(entry *p4_v1.TableEntry) {
 	sw.log.Tracef("Added entry: %+v", entry)
 }
 
-func (sw *GrpcSwitch) addRules() {		
-	entries := GetAllTableEntries(sw)	// GetAllTableEntries in rules.go, legge le regole dal file di configurazione .yml
+func (sw *GrpcSwitch) addRules() {
+	entries := GetAllTableEntries(sw) // GetAllTableEntries in rules.go, legge le regole dal file di configurazione .yml
 	for _, entry := range entries {
-		sw.addTableEntry(entry)
+		sw.AddTableEntry(entry)
 	}
 }
 

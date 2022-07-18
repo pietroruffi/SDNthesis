@@ -66,7 +66,7 @@ func (sw *GrpcSwitch) RunSwitch(ct context.Context) error {
 	electionID := p4_v1.Uint128{High: 0, Low: 1}
 	sw.messageCh = make(chan *p4_v1.StreamMessageResponse, 1000)
 	arbitrationCh := make(chan bool)
-	sw.p4RtC = client.NewClient(c, sw.id, electionID)	//Inizializzo sw.p4RtC a nuovo oggetto CLIENT
+	sw.p4RtC = client.NewClient(c, sw.id, electionID) //Inizializzo sw.p4RtC a nuovo oggetto CLIENT
 	go sw.p4RtC.Run(ctx, conn, arbitrationCh, sw.messageCh)
 	// check primary
 	for isPrimary := range arbitrationCh {
@@ -90,7 +90,7 @@ func (sw *GrpcSwitch) RunSwitch(ct context.Context) error {
 	go sw.handleStreamMessages()
 	go sw.startRunner(ctx, cancel)
 	//
-	sw.addRules()		// -- AddRules! (p4switch/confing.go) --
+	sw.addRules() // -- AddRules! (p4switch/config.go) --
 	sw.EnableDigest()
 	//
 	sw.log.Info("Switch started")

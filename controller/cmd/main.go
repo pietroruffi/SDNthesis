@@ -88,9 +88,6 @@ func main() {
 		for _, sw := range switchs {
 			go changeConfig(ctx, sw, newConfig)
 		}
-		for _, sw := range switchs {
-			log.Info("Program on switch " + sw.GetName() + ": " + sw.GetProgramName())
-		}
 		log.Info("Press enter to change switch config or EOF to terminate")
 		n, _ = os.Stdin.Read(buff)
 	}
@@ -101,7 +98,9 @@ func main() {
 }
 
 func changeConfig(ctx context.Context, sw *p4switch.GrpcSwitch, configName string) {
+
 	if err := sw.ChangeConfig(configName); err != nil { //ChangeConfig in p4switch/config.go
+
 		if status.Convert(err).Code() == codes.Canceled {
 			sw.GetLogger().Warn("Failed to update config, restarting")
 			if err := sw.RunSwitch(ctx); err != nil {

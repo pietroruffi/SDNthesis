@@ -111,37 +111,44 @@ func addRule(w http.ResponseWriter, r *http.Request) {
 
 	// Questo codice estrae le informazioni dalle POST
 
-	/*
-		if r.Method == "POST" {
-			if err := r.ParseForm(); err != nil {
-				fmt.Println("ParseForm() err:", err)
-				return
-			}
+	if r.Method == "POST" {
+		if err := r.ParseForm(); err != nil {
+			fmt.Println("ParseForm() err:", err)
+			return
+		}
 
-			// TO-DO handle this request:
-			// 1) extract informations of actual rule
-			// 2) add new rule to switch sw
-			// 3) write a success/failure message on right variable
-			// 4) show index page by calling http.Redirect(w, r, "/", http.StatusSeeOther)
+		// TO-DO handle this request:
+		// 1) extract informations of actual rule
+		// 2) add new rule to switch sw
+		// 3) write a success/failure message on right variable
+		// 4) show index page by calling http.Redirect(w, r, "/", http.StatusSeeOther)
 
-			// REMEMBER add the program in execution on switch sw
-			action := findActionByIdAndTable("asymmetric", idAction, idTable)
+		actualSwitch := getSwitchByName(sw)
+		rule := findActionByIdAndTable(actualSwitch.GetProgramName(), idAction, idTable)
 
-			var inputKeys []string
+		var inputKeys []string
 
-			for _, key := range action.Table.Keys {
-				inputKeys = append(inputKeys, r.FormValue("key"+strconv.Itoa(key.Id)))
-			}
+		for idx := range rule.Keys {
+			inputKeys = append(inputKeys, r.FormValue("key"+strconv.Itoa(idx)))
+		}
 
-			var inputParam []string
-			for _, par := range action.Parameters {
-				inputParam = append(inputParam, r.FormValue("par"+strconv.Itoa(par.Id)))
-			}
+		var inputParam []string
+		for idx := range rule.ActionParams {
+			inputParam = append(inputParam, r.FormValue("par"+strconv.Itoa(idx)))
+		}
 
-			successMessage = "You successfully clicked on Add, good job!"
+		actualSwitch.AddTableEntry(p4switch.CreateTableEntry(actualSwitch, p4switch.Rule{
+			Table:       rule.TableName,
+			Key:         inputKeys,
+			Type:        rule.MatchType,
+			Action:      rule.ActionName,
+			ActionParam: inputParam,
+		}))
 
-			http.Redirect(w, r, "/", http.StatusSeeOther)
-		}*/
+		successMessage = "Entry added with success"
+
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+	}
 
 	if r.Method == "GET" {
 		actualSwitch := getSwitchByName(sw)
@@ -159,15 +166,6 @@ func addRule(w http.ResponseWriter, r *http.Request) {
 			fmt.Println(err)
 		}
 	}
-}
-
-func getSwitchByName(name string) *p4switch.GrpcSwitch {
-	for _, sw := range allSwitches {
-		if sw.GetName() == name {
-			return sw
-		}
-	}
-	return nil
 }
 
 func executeProgram(w http.ResponseWriter, r *http.Request) {
@@ -205,6 +203,15 @@ func executeProgram(w http.ResponseWriter, r *http.Request) {
 
 	http.Redirect(w, r, "/", http.StatusSeeOther)
 
+}
+
+func getSwitchByName(name string) *p4switch.GrpcSwitch {
+	for _, sw := range allSwitches {
+		if sw.GetName() == name {
+			return sw
+		}
+	}
+	return nil
 }
 
 func getDescribersForProgram(p4ProgramName string) []p4switch.RuleDescriber {
