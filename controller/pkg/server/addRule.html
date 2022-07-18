@@ -83,7 +83,7 @@
                             {{ end }}
                             <label for='key{{$i}}' class='col-sm-5 col-form-label'>{{ $key.Name }} (bit&lt;{{ $key.Bitwidth }}&gt;)</label>
                             <div class='col-sm-7'>
-                                <input type='text' class='form-control' name='key{{$i}}' id='key{{$i}}'>
+                                <input type='text' class='form-control' name='key{{$i}}' id='key{{$i}}' placeholder="{{ $key.Pattern }}">
                             </div>
                         </div>
                         {{end}}
@@ -94,7 +94,7 @@
                             {{ end }}
                             <label for='par{{$i}}' class='col-sm-5 col-form-label'>{{ $par.Name }} (bit&lt;{{ $par.Bitwidth }}&gt;)</label>
                             <div class='col-sm-7'>
-                                <input type='text' class='form-control' name='par{{$i}}' id='par{{$i}}'>
+                                <input type='text' class='form-control' name='par{{$i}}' id='par{{$i}}' placeholder="{{ $par.Pattern }}">
                             </div>
                         </div>
                         {{ end }}     

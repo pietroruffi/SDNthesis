@@ -42,6 +42,14 @@ type SwitchConfig struct {
 	Digest  []string
 }
 
+func (sw *GrpcSwitch) GetInstalledRules() []Rule {
+	return sw.installedRules
+}
+
+func (sw *GrpcSwitch) AddToInstalledRules(rule Rule) {
+	sw.installedRules = append(sw.installedRules, rule)
+}
+
 func (sw *GrpcSwitch) GetProgramName() string {
 	config, err := parseSwConfig(sw.GetName(), sw.configName)
 	if err != nil {
@@ -58,6 +66,16 @@ func (sw *GrpcSwitch) GetDigests() []string {
 		return make([]string, 0)
 	}
 	return config.Digest
+}
+
+func GetEntriesOfConfigFile(sw *GrpcSwitch) []Rule {
+
+	config, err := parseSwConfig(sw.GetName(), sw.configName)
+	if err != nil {
+		sw.log.Errorf("Error getting table entries: %v", err)
+		return nil
+	}
+	return config.Rules
 }
 
 func GetAllTableEntries(sw *GrpcSwitch) []*p4_v1.TableEntry {

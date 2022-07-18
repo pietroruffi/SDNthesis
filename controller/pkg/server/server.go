@@ -118,35 +118,42 @@ func addRule(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		// TO-DO handle this request:
+		// To handle this request:
 		// 1) extract informations of actual rule
 		// 2) add new rule to switch sw
 		// 3) write a success/failure message on right variable
 		// 4) show index page by calling http.Redirect(w, r, "/", http.StatusSeeOther)
 
 		actualSwitch := getSwitchByName(sw)
-		rule := findActionByIdAndTable(actualSwitch.GetProgramName(), idAction, idTable)
+		rule_descr := findActionByIdAndTable(actualSwitch.GetProgramName(), idAction, idTable)
 
 		var inputKeys []string
 
-		for idx := range rule.Keys {
+		for idx := range rule_descr.Keys {
 			inputKeys = append(inputKeys, r.FormValue("key"+strconv.Itoa(idx)))
 		}
 
 		var inputParam []string
-		for idx := range rule.ActionParams {
+		for idx := range rule_descr.ActionParams {
 			inputParam = append(inputParam, r.FormValue("par"+strconv.Itoa(idx)))
 		}
 
-		actualSwitch.AddTableEntry(p4switch.CreateTableEntry(actualSwitch, p4switch.Rule{
-			Table:       rule.TableName,
+		rule := p4switch.Rule{
+			Table:       rule_descr.TableName,
 			Key:         inputKeys,
-			Type:        rule.MatchType,
-			Action:      rule.ActionName,
+			Type:        rule_descr.MatchType,
+			Action:      rule_descr.ActionName,
 			ActionParam: inputParam,
-		}))
+		}
 
-		successMessage = "Entry added with success"
+		res := actualSwitch.AddTableEntry(p4switch.CreateTableEntry(actualSwitch, rule))
+
+		if res != nil {
+			errorMessage = "Failed to add entry: " + res.Error()
+		} else {
+			successMessage = "Entry added with success"
+			actualSwitch.AddToInstalledRules(rule)
+		}
 
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 	}

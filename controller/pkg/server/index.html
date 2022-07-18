@@ -143,8 +143,51 @@
                 </div>
                 {{ end }}
                 <!-- Finisce la parte da ripetere per ogni switch -->
-
             </div>
+
+            <div class='col-12 col-sm-6 col-lg-4 col-xl-5 justify-content-center align-items-center'>
+                <h2 class='mb-3'>Installed Rules</h2>
+                <h2 class='mt-4'><a class='btn btn-light fs-4 p-2 w-100' style='font-weight: 500' href='#switchs1Ins'
+                    data-bs-toggle='collapse'>Switch S1</a>
+                </h2>
+                <div class="list-group collapse" id="switchs1Ins">
+                <table class="table text-center">
+                    <thead>
+                      <tr>
+                        <th scope="col">Table</th>
+                        <th scope="col">Action</th>
+                        <th scope="col">Key</th>
+                        <th scope="col">Params</th>
+                        <th scope="col">&nbsp;</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr class="align-middle">
+                        <td>MyIngress.ipv4_lpm1</td>
+                        <td>MyIngress.send_digest</td>
+                        <td>10.0.0.1/24</td>
+                        <td></td>
+                        <td><a href='removeRule.html'><button class='badge bg-danger rounded-pill' type='submit'>Remove</button></a></td>
+                      </tr>
+                      <tr class="align-middle">
+                        <td>MyIngress.ipv4_lpm1</td>
+                        <td>MyIngress.ipv4_forward</td>
+                        <td>10.0.0.1/24</td>
+                        <td>08:00:00:00:00:00:01:00<br>1</td>
+                        <td><a href='removeRule.html'><button class='badge bg-danger rounded-pill' type='submit'>Remove</button></a></td>
+                      </tr>
+                      <tr class="align-middle">
+                        <td>MyIngress.ipv4_lpm1</td>
+                        <td>MyIngress.send_digest</td>
+                        <td>10.0.0.1/24</td>
+                        <td></td>
+                        <td><a href='removeRule.html'><button class='badge bg-danger rounded-pill' type='submit'>Remove</button></a></td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+            </div>
+            
         </div>
     </div>
         <!--    FINE    -->
