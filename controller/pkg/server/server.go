@@ -1,7 +1,6 @@
 package server
 
 import (
-	"context"
 	"controller/pkg/p4switch"
 	"encoding/json"
 	"errors"
@@ -10,9 +9,6 @@ import (
 	"net/http"
 	"os"
 	"strconv"
-
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -205,29 +201,29 @@ func executeProgram(w http.ResponseWriter, r *http.Request) {
 	// 2) write a success/failure message on right variable
 	// 3) show index page by calling http.Redirect(w, r, "/", http.StatusSeeOther)
 
-	ctx, cancel := context.WithCancel(context.Background())
-
-	swName := r.URL.Query().Get("switch")
-
-	sw := getSwitchByName(swName)
 	configName := r.URL.Query().Get("program")
+	/*
+		swName := r.URL.Query().Get("switch")
 
-	if err := sw.ChangeConfig(configName); err != nil { //ChangeConfig in p4switch/config.go
-		if status.Convert(err).Code() == codes.Canceled {
-			sw.GetLogger().Warn("Failed to update config, restarting")
-			errorMessage = "Failed to update config, restarting"
-			if err := sw.RunSwitch(ctx); err != nil {
-				sw.GetLogger().Errorf("Cannot start")
-				sw.GetLogger().Errorf("%v", err)
+		sw := getSwitchByName(swName)
+
+		ctx, cancel := context.WithCancel(context.Background())
+		if err := sw.ChangeConfig(configName); err != nil { //ChangeConfig in p4switch/config.go
+			if status.Convert(err).Code() == codes.Canceled {
+				sw.GetLogger().Warn("Failed to update config, restarting")
+				errorMessage = "Failed to update config, restarting"
+				if err := sw.RunSwitch(ctx); err != nil {
+					sw.GetLogger().Errorf("Cannot start")
+					sw.GetLogger().Errorf("%v", err)
+				}
+			} else {
+				sw.GetLogger().Errorf("Error updating swConfig: %v", err)
 			}
-		} else {
-			sw.GetLogger().Errorf("Error updating swConfig: %v", err)
 		}
-	}
-	sw.GetLogger().Tracef("Config updated to %s, ", configName)
-	cancel()
-
-	successMessage = "Config updated to " + configName
+		sw.GetLogger().Tracef("Config updated to %s, ", configName)
+		cancel()
+	*/
+	errorMessage = "You clicket on execute for config '" + configName + "', but not implemented yet"
 
 	http.Redirect(w, r, "/", http.StatusSeeOther)
 
