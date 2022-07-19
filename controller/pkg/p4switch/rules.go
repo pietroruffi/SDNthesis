@@ -1,6 +1,7 @@
 package p4switch
 
 import (
+	"controller/pkg/client"
 	"fmt"
 	"io/ioutil"
 
@@ -13,7 +14,6 @@ import (
 type Rule struct {
 	Table       string
 	Key         []string
-	Type        string
 	Action      string
 	ActionParam []string `yaml:"action_param"`
 	Describer   RuleDescriber
@@ -22,7 +22,6 @@ type Rule struct {
 type RuleDescriber struct {
 	TableName    string
 	TableId      int
-	MatchType    string
 	Keys         []FieldDescriber
 	ActionName   string
 	ActionId     int
@@ -30,10 +29,11 @@ type RuleDescriber struct {
 }
 
 type FieldDescriber struct {
-	Name     string
-	Bitwidth int
-	Mask     string // (optional) used in ternary match, ex. "value: 10.0.0.1" "mask: 0xFFFFFF00"
-	Pattern  string // (optional), if present the parser will use this to discriminate which function parses this field
+	Name      string
+	Bitwidth  int
+	MatchType string // Used in keys
+	Mask      string // TODO (optional) used in ternary match, ex. "value: 10.0.0.1" "mask: 0xFFFFFF00"
+	Pattern   string // (optional), if present the parser will use this to discriminate which function parses this field
 }
 
 type SwitchConfig struct {
@@ -51,14 +51,17 @@ func (sw *GrpcSwitch) AddToInstalledRules(rule Rule) {
 }
 
 func (sw *GrpcSwitch) RemoveFromInstalledRules(idx int) {
-	// CHANGE do better :-)
-	var newRules []Rule
-	for i, rule := range sw.installedRules {
-		if i != idx {
-			newRules = append(newRules, rule)
+	// CHANGE do better :P
+	/*
+		var newRules []Rule
+		for i, rule := range sw.installedRules {
+			if i != idx {
+				newRules = append(newRules, rule)
+			}
 		}
-	}
-	sw.installedRules = newRules
+		sw.installedRules = newRules*/
+	// Remove the element at index i from a.
+	sw.installedRules = append(sw.installedRules[:idx], sw.installedRules[idx+1:]...)
 }
 
 func (sw *GrpcSwitch) GetProgramName() string {
@@ -120,13 +123,21 @@ func parseSwConfig(swName string, configFileName string) (*SwitchConfig, error) 
 
 func CreateTableEntry(sw *GrpcSwitch, rule Rule) *p4_v1.TableEntry {
 	rule.Describer = *getDescriberFor(sw.GetProgramName(), rule)
-
-	parserMatch := getParserForMatchInterface(rule.Type)
 	parserActParam := getParserForActionParams("default")
+
 	return sw.p4RtC.NewTableEntry(
 		rule.Table,
-		parserMatch.parse(rule.Key, rule.Describer.Keys),
+		parseMatchInterfaces(rule.Key, rule.Describer.Keys),
 		sw.p4RtC.NewTableActionDirect(rule.Action, parserActParam.parse(rule.ActionParam, rule.Describer.ActionParams)),
 		nil,
 	)
+}
+
+func parseMatchInterfaces(keys []string, describers []FieldDescriber) []client.MatchInterface {
+	result := make([]client.MatchInterface, len(keys))
+	for idx, key := range keys {
+		parserMatch := getParserForMatchInterface(describers[idx].MatchType)
+		result[idx] = parserMatch.parse(key, describers[idx])
+	}
+	return result
 }

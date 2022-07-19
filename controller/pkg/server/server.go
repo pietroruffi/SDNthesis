@@ -68,11 +68,10 @@ func StartServer(switches []*p4switch.GrpcSwitch) {
 }
 
 func getRoot(w http.ResponseWriter, r *http.Request) {
-	fmt.Printf("got / request\n")
 
 	// TO-DO read available programs names
 	// and when doing this PARSE the .p4 in .p4.p4info.json
-	// REMEMBER!!
+
 	programNames := []string{"simple", "simple1", "asymmetric"}
 
 	var swData []SwitchServerData
@@ -106,15 +105,12 @@ func getRoot(w http.ResponseWriter, r *http.Request) {
 }
 
 func addRule(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("got /addRule request")
 
 	sw := r.URL.Query().Get("switch")
 
 	idAction, err := strconv.Atoi(r.URL.Query().Get("idAction"))
 
 	idTable, err := strconv.Atoi(r.URL.Query().Get("idTable"))
-
-	// Questo codice estrae le informazioni dalle POST
 
 	if r.Method == "POST" {
 		if err := r.ParseForm(); err != nil {
@@ -145,7 +141,6 @@ func addRule(w http.ResponseWriter, r *http.Request) {
 		rule := p4switch.Rule{
 			Table:       rule_descr.TableName,
 			Key:         inputKeys,
-			Type:        rule_descr.MatchType,
 			Action:      rule_descr.ActionName,
 			ActionParam: inputParam,
 		}
@@ -204,7 +199,6 @@ func removeRule(w http.ResponseWriter, r *http.Request) {
 }
 
 func executeProgram(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("got /executeProgram request")
 
 	// TO-DO handle this request:
 	// 1) change program in execution on switch
@@ -231,10 +225,9 @@ func executeProgram(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	sw.GetLogger().Tracef("Config updated to %s, ", configName)
+	cancel()
 
 	successMessage = "Config updated to " + configName
-
-	cancel()
 
 	http.Redirect(w, r, "/", http.StatusSeeOther)
 

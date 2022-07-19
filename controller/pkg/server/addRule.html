@@ -25,7 +25,7 @@
             <div class='collapse navbar-collapse' id='navbarSupportedContent'>
                 <ul class='navbar-nav me-auto mb-2 mb-lg-0'>
                     <li class='nav-item'>
-                        <a class='nav-link active' aria-current='page' href='#'>
+                        <a class='nav-link active' aria-current='page' href='/'>
                             Home
                         </a>
                     </li>
@@ -55,11 +55,11 @@
                 <form class='col-12 row justify-content-center' action='#' method='POST'>
 
                     <!-- Eventuale messaggio di successo/errore?
-                        
+
                     <div class="alert alert-success mt-5" role="alert" >
                         Operazione eseguita con successo
                     </div>
-                    
+
                     -->
                     <h2>Add new rule for switch S1</h2>
                     <div class='mb-3'>
@@ -79,10 +79,10 @@
                         {{ range $i, $key := $rule.Keys }}
                         <div class='mb-3 row'>
                             {{ if eq $i 0 }}
-                            <label class='form-label'><strong>Key (match type: {{ $rule.MatchType }})</strong></label>
+                            <label class='form-label'><strong>Key</strong></label>
                             {{ end }}
-                            <label for='key{{$i}}' class='col-sm-5 col-form-label'>{{ $key.Name }} (bit&lt;{{ $key.Bitwidth }}&gt;)</label>
-                            <div class='col-sm-7'>
+                            <label for='key{{$i}}' class='col-sm-10 col-form-label'>{{ $key.Name }} (bit&lt;{{ $key.Bitwidth }}&gt;), match type: {{ $key.MatchType }}</label>
+                            <div class='col-sm-10'>
                                 <input type='text' class='form-control' name='key{{$i}}' id='key{{$i}}' placeholder="{{ $key.Pattern }}">
                             </div>
                         </div>
@@ -92,13 +92,15 @@
                             {{ if eq $i 0 }}
                             <label class='form-label'><strong>Parameters</strong></label>
                             {{ end }}
-                            <label for='par{{$i}}' class='col-sm-5 col-form-label'>{{ $par.Name }} (bit&lt;{{ $par.Bitwidth }}&gt;)</label>
-                            <div class='col-sm-7'>
+                            <label for='par{{$i}}' class='col-sm-10 col-form-label'>{{ $par.Name }} (bit&lt;{{ $par.Bitwidth }}&gt;)</label>
+                            <div class='col-sm-10'>
                                 <input type='text' class='form-control' name='par{{$i}}' id='par{{$i}}' placeholder="{{ $par.Pattern }}">
                             </div>
                         </div>
-                        {{ end }}     
-                        <button type='submit' class='w-100 btn btn-success mt-3'>Add</button>
+                        {{ end }}
+                        <div class='col-sm-10'>
+                            <button type='submit' class='w-100 btn btn-success mt-3'>Add</button>
+                        </div>
                     </div>
                 </form>
             </div>
@@ -106,5 +108,3 @@
     </div>
         <!--    FINE    -->
 </body>
-
-</html>

@@ -9,6 +9,8 @@ import (
 	"os"
 	"strconv"
 	"strings"
+
+	log "github.com/sirupsen/logrus"
 )
 
 const (
@@ -16,7 +18,7 @@ const (
 	pattern_mac_addr  = "mac_address"
 	pattern_port      = "port"
 
-	pathJsonInfo = "../p4/JsonOfP4info/"
+	pathJsonInfo = "../p4/"
 	extJsonInfo  = ".p4.p4info.json"
 )
 
@@ -29,128 +31,126 @@ type ActionDescr struct {
 
 // Define general parser for MatchInterfaces
 type ParserMatchInterface interface {
-	parse(keys []string, describers []FieldDescriber) []client.MatchInterface
+	parse(key string, describer FieldDescriber) client.MatchInterface
 }
 
 // Specific parser for MatchInterfaces with matchType: "exact"
 type ExactMatchParser struct {
 }
 
-func (p *ExactMatchParser) parse(keys []string, describers []FieldDescriber) []client.MatchInterface {
+func (p *ExactMatchParser) parse(key string, describer FieldDescriber) client.MatchInterface {
 
-	var result []client.MatchInterface
 	var field []byte
 
-	for idx, key := range keys {
-		switch describers[idx].Pattern {
-		// pattern is added in parseP4Info(), defines if the key satisfies a known pattern and had to be parsed in a specific way
-		case pattern_mac_addr:
-			{
-				field, _ = conversion.MacToBinary(key)
-			}
-		case pattern_ipv4_addr:
-			{
-				field, _ = conversion.IpToBinary(key)
-			}
-		case pattern_port:
-			{
-				num, _ := strconv.ParseInt(key, 10, 64)
-				field, _ = conversion.UInt64ToBinaryCompressed(uint64(num))
-			}
+	switch describer.Pattern {
+	// pattern is added in parseP4Info(), defines if the key satisfies a known pattern and had to be parsed in a specific way
+	case pattern_mac_addr:
+		{
+			field, _ = conversion.MacToBinary(key)
 		}
-		// add to result the key trasformed into []byte
-		result = append(result, client.MatchInterface(&client.ExactMatch{
-			Value: field,
-		}))
+	case pattern_ipv4_addr:
+		{
+			field, _ = conversion.IpToBinary(key)
+		}
+	case pattern_port:
+		{
+			num, _ := strconv.ParseInt(key, 10, 64)
+			field, _ = conversion.UInt64ToBinaryCompressed(uint64(num))
+		}
 	}
-	return result
+	// add to result the key trasformed into []byte
+
+	return client.MatchInterface(&client.ExactMatch{
+		Value: field,
+	})
 }
 
 // Specific parser for MatchInterfaces with matchType: "lpm"
 type LpmMatchParser struct {
 }
 
-func (p *LpmMatchParser) parse(keys []string, describers []FieldDescriber) []client.MatchInterface {
+func (p *LpmMatchParser) parse(key string, describer FieldDescriber) client.MatchInterface {
 
-	var result []client.MatchInterface
 	var field []byte
 	var lpm int64
+	var err error
 
-	for idx, key := range keys {
-		switch describers[idx].Pattern {
-		case pattern_ipv4_addr:
-			{
-				// TODO write better
-				values := strings.Split(key, "/")
-				if len(values) != 2 {
-					//log.Errorf("Error parsing match %s -> %s", matchType, key)
-					return nil
-				}
-				field, _ = conversion.IpToBinary(values[0])
-				lpm, _ = strconv.ParseInt(values[1], 10, 64)
-				/*if err != nil {
-					//log.Errorf("Error parsing lpm %d", lpm)
-				}*/
+	switch describer.Pattern {
+	case pattern_ipv4_addr:
+		{
+			values := strings.Split(key, "/")
+			if len(values) != 2 {
+				log.Errorf("Error parsing match LPM -> %s", key)
+				return nil
 			}
-		case pattern_mac_addr:
-			// TODO
-
-		case pattern_port:
-			// TODO
-
-		default:
-			// TODO
+			field, err = conversion.IpToBinary(values[0])
+			if err != nil {
+				log.Errorf("Error parsing field %s\n%v", values[0], err)
+			}
+			lpm, err = strconv.ParseInt(values[1], 10, 64)
+			if err != nil {
+				log.Errorf("Error parsing lpm %d", lpm)
+			}
 		}
-		result = append(result, client.MatchInterface(&client.LpmMatch{
-			Value: field,
-			PLen:  int32(lpm),
-		}))
+	case pattern_mac_addr:
+		// TODO
+
+	case pattern_port:
+		// TODO
+
+	default:
+		// TODO - do nothing (?)
 	}
-	return result
+
+	return client.MatchInterface(&client.LpmMatch{
+		Value: field,
+		PLen:  int32(lpm),
+	})
 }
 
 // Specific parser for MatchInterfaces with matchType: "ternary"
 type TernaryMatchParser struct {
 }
 
-func (p *TernaryMatchParser) parse(keys []string, describers []FieldDescriber) []client.MatchInterface {
+func (p *TernaryMatchParser) parse(key string, describer FieldDescriber) client.MatchInterface {
 	// CHANGE search how to parse ternary
-	var result []client.MatchInterface
 	var field []byte
 	var lpm int64
-	for idx, key := range keys {
-		switch describers[idx].Pattern {
-		case pattern_ipv4_addr:
-			{
-				values := strings.Split(key, "/")
-				if len(values) != 2 {
-					//log.Errorf("Error parsing match %s -> %s", matchType, key)
-					return nil
-				}
-				field, _ = conversion.IpToBinary(values[0])
-				lpm, _ = strconv.ParseInt(values[1], 10, 64)
-				/*if err != nil {
-					//log.Errorf("Error parsing lpm %d", lpm)
-				}*/
+	var err error
+
+	switch describer.Pattern {
+	case pattern_ipv4_addr:
+		{
+			// TODO copied from LPM
+			values := strings.Split(key, "/")
+			if len(values) != 2 {
+				log.Errorf("Error parsing match LPM -> %s", key)
+				return nil
 			}
-		case pattern_mac_addr:
-			// TODO
-
-		case pattern_port:
-			// TODO
-
-		default:
-			// TODO
+			field, err = conversion.IpToBinary(values[0])
+			if err != nil {
+				log.Errorf("Error parsing field %s\n%v", values[0], err)
+			}
+			lpm, err = strconv.ParseInt(values[1], 10, 64)
+			if err != nil {
+				log.Errorf("Error parsing lpm %d", lpm)
+			}
 		}
-		result = append(result, client.MatchInterface(&client.LpmMatch{
-			Value: field,
-			PLen:  int32(lpm),
-		}))
-	}
-	return result
-}
+	case pattern_mac_addr:
+		// TODO
 
-// GATTINO
+	case pattern_port:
+		// TODO
+
+	default:
+		// TODO - do nothing (?)
+	}
+
+	return client.MatchInterface(&client.LpmMatch{
+		Value: field,
+		PLen:  int32(lpm),
+	})
+}
 
 // A kind of "ParserFactory", returns the parser for the specified matchType (exact | lpm | ternary)
 
@@ -174,7 +174,7 @@ type ParserActionParams interface {
 }
 
 // There's no need to define more than one parser, because ActionParameters are not influenced by matchType
-// but to keep everything more general (and for future extensions) is defined a general structure and a default parser
+// but to keep everything more general (and for future extensions), have been defined a general structure and a default parser
 
 type DefaultParserActionParams struct{}
 
@@ -200,7 +200,6 @@ func (p *DefaultParserActionParams) parse(params []string, describers []FieldDes
 			}
 		}
 		actionByte[idx] = field
-
 	}
 	return actionByte
 }
@@ -211,7 +210,8 @@ func getParserForActionParams(parserType string) ParserActionParams {
 	return ParserActionParams(&DefaultParserActionParams{})
 }
 
-func ParseP4Info(p4Program string) *string { // return json of []RuleDescriber
+// return json of []RuleDescriber
+func ParseP4Info(p4Program string) *string {
 
 	filename := pathJsonInfo + p4Program + extJsonInfo
 
@@ -282,19 +282,16 @@ func ParseP4Info(p4Program string) *string { // return json of []RuleDescriber
 
 		var talbe_keys []FieldDescriber
 
-		var matchType string
-
 		// Extract keys
 
 		for index_keys := range table["matchFields"].([]interface{}) {
 
 			key := table["matchFields"].([]interface{})[index_keys].(map[string]interface{})
 
-			matchType = key["matchType"].(string)
-
 			talbe_keys = append(talbe_keys, FieldDescriber{
-				Name:     key["name"].(string),
-				Bitwidth: int(key["bitwidth"].(float64)),
+				Name:      key["name"].(string),
+				Bitwidth:  int(key["bitwidth"].(float64)),
+				MatchType: key["matchType"].(string),
 				// TODO Add mask if ternary match
 				Pattern: findIfKnownPattern(key["name"].(string), int(key["bitwidth"].(float64))),
 			})
@@ -317,7 +314,6 @@ func ParseP4Info(p4Program string) *string { // return json of []RuleDescriber
 				result = append(result, RuleDescriber{
 					TableName:    table_name,
 					TableId:      table_id,
-					MatchType:    matchType,
 					Keys:         talbe_keys,
 					ActionName:   ac.ActionName,
 					ActionId:     ac.ActionId,
