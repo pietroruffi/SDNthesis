@@ -3,6 +3,7 @@ package p4switch
 import (
 	"controller/pkg/client"
 	"controller/pkg/util/conversion"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -134,16 +135,16 @@ func (p *TernaryMatchParser) parse(key string, describer FieldDescriber) client.
 	switch describer.Pattern {
 	case pattern_ipv4_addr:
 		{
-			values := strings.Split(key, "$")
+			values := strings.Split(key, "$") // character $ is used as a separator by value and mask, like 10.0.0.1$FFFFFF00
 			if len(values) != 2 {
-				log.Errorf("Error parsing match LPM -> %s", key)
+				log.Errorf("Error parsing match TERNARY -> %s", key)
 				return nil
 			}
 			field, err = conversion.IpToBinary(values[0])
 			if err != nil {
 				log.Errorf("Error parsing field %s\n%v", values[0], err)
 			}
-			mask = []byte(values[1])
+			mask, err = hex.DecodeString(values[1])
 			if err != nil {
 				log.Errorf("Error parsing mask %s", values[1])
 			}
@@ -152,14 +153,14 @@ func (p *TernaryMatchParser) parse(key string, describer FieldDescriber) client.
 		{
 			values := strings.Split(key, "$")
 			if len(values) != 2 {
-				log.Errorf("Error parsing match LPM -> %s", key)
+				log.Errorf("Error parsing match TERNARY -> %s", key)
 				return nil
 			}
 			field, err = conversion.MacToBinary(values[0])
 			if err != nil {
 				log.Errorf("Error parsing field %s\n%v", values[0], err)
 			}
-			mask = []byte(values[1])
+			mask, err = hex.DecodeString(values[1])
 			if err != nil {
 				log.Errorf("Error parsing mask %s", values[1])
 			}
@@ -181,12 +182,12 @@ func (p *TernaryMatchParser) parse(key string, describer FieldDescriber) client.
 
 func getParserForMatchInterface(parserType string) ParserMatchInterface {
 
-	switch strings.ToLower(parserType) {
-	case "exact":
+	switch strings.ToUpper(parserType) {
+	case "EXACT":
 		return ParserMatchInterface(&ExactMatchParser{})
-	case "lpm":
+	case "LPM":
 		return ParserMatchInterface(&LpmMatchParser{})
-	case "ternary":
+	case "TERNARY":
 		return ParserMatchInterface(&TernaryMatchParser{})
 	default:
 		return nil
@@ -316,7 +317,7 @@ func ParseP4Info(p4Program string) *string {
 			talbe_keys = append(talbe_keys, FieldDescriber{
 				Name:      key["name"].(string),
 				Bitwidth:  int(key["bitwidth"].(float64)),
-				MatchType: key["matchType"].(string),
+				MatchType: strings.ToUpper(key["matchType"].(string)),
 				Pattern:   findIfKnownPattern(key["name"].(string), int(key["bitwidth"].(float64))),
 			})
 		}

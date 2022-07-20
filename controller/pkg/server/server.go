@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -124,9 +125,13 @@ func addRule(w http.ResponseWriter, r *http.Request) {
 		rule_descr := findActionByIdAndTable(actualSwitch.GetProgramName(), idAction, idTable)
 
 		var inputKeys []string
-
-		for idx := range rule_descr.Keys {
-			inputKeys = append(inputKeys, r.FormValue("key"+strconv.Itoa(idx)))
+		var inputKey string
+		for idx, desc := range rule_descr.Keys {
+			inputKey = r.FormValue("key" + strconv.Itoa(idx))
+			if strings.ToUpper(desc.MatchType) == "TERNARY" {
+				inputKey = inputKey + "$" + r.FormValue("mask"+strconv.Itoa(idx))
+			}
+			inputKeys = append(inputKeys, inputKey)
 		}
 
 		var inputParam []string

@@ -83,6 +83,11 @@
                             <div class='col-sm-10'>
                                 <input type='text' class='form-control' name='key{{$i}}' id='key{{$i}}' placeholder="{{ $key.Pattern }}">
                             </div>
+                            {{ if eq $key.MatchType "TERNARY" }}
+                            <div class='col-sm-10 mt-1'>
+                                <input type='text' class='form-control' name='mask{{$i}}' id='mask{{$i}}' placeholder="Mask in exadecimal format">
+                            </div>
+                            {{ end }}
                         </div>
                         {{end}}
                         {{ range $i, $par := $rule.ActionParams }}
