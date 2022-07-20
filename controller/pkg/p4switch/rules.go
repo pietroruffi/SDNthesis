@@ -31,8 +31,7 @@ type RuleDescriber struct {
 type FieldDescriber struct {
 	Name      string
 	Bitwidth  int
-	MatchType string // Used in keys
-	Mask      string // TODO (optional) used in ternary match, ex. "value: 10.0.0.1" "mask: 0xFFFFFF00"
+	MatchType string // (optional) used in keys
 	Pattern   string // (optional), if present the parser will use this to discriminate which function parses this field
 }
 
@@ -51,16 +50,6 @@ func (sw *GrpcSwitch) AddToInstalledRules(rule Rule) {
 }
 
 func (sw *GrpcSwitch) RemoveFromInstalledRules(idx int) {
-	// CHANGE do better :P
-	/*
-		var newRules []Rule
-		for i, rule := range sw.installedRules {
-			if i != idx {
-				newRules = append(newRules, rule)
-			}
-		}
-		sw.installedRules = newRules*/
-	// Remove the element at index i from a.
 	sw.installedRules = append(sw.installedRules[:idx], sw.installedRules[idx+1:]...)
 }
 
@@ -83,7 +72,6 @@ func (sw *GrpcSwitch) GetDigests() []string {
 }
 
 func GetEntriesOfConfigFile(sw *GrpcSwitch) []Rule {
-
 	config, err := parseSwConfig(sw.GetName(), sw.configName)
 	if err != nil {
 		sw.log.Errorf("Error getting table entries: %v", err)

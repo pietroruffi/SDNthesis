@@ -93,7 +93,7 @@ func getRoot(w http.ResponseWriter, r *http.Request) {
 	err := tmpl.Execute(w, data)
 
 	if err != nil {
-		fmt.Println(err)
+		log.Errorf(err.Error())
 	}
 
 	successMessage = ""
@@ -172,7 +172,6 @@ func addRule(w http.ResponseWriter, r *http.Request) {
 }
 
 func removeRule(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("got /removeRule request")
 
 	swName := r.URL.Query().Get("switch")
 

@@ -58,8 +58,8 @@ func (p *ExactMatchParser) parse(key string, describer FieldDescriber) client.Ma
 			field, _ = conversion.UInt64ToBinaryCompressed(uint64(num))
 		}
 	}
-	// add to result the key trasformed into []byte
 
+	// add to result the key trasformed into []byte
 	return client.MatchInterface(&client.ExactMatch{
 		Value: field,
 	})
@@ -93,10 +93,23 @@ func (p *LpmMatchParser) parse(key string, describer FieldDescriber) client.Matc
 			}
 		}
 	case pattern_mac_addr:
-		// TODO
-
+		{
+			values := strings.Split(key, "/")
+			if len(values) != 2 {
+				log.Errorf("Error parsing match LPM -> %s", key)
+				return nil
+			}
+			field, err = conversion.MacToBinary(values[0])
+			if err != nil {
+				log.Errorf("Error parsing field %s\n%v", values[0], err)
+			}
+			lpm, err = strconv.ParseInt(values[1], 10, 64)
+			if err != nil {
+				log.Errorf("Error parsing lpm %d", lpm)
+			}
+		}
 	case pattern_port:
-		// TODO
+		// TODO - do nothing (?)
 
 	default:
 		// TODO - do nothing (?)
@@ -113,16 +126,15 @@ type TernaryMatchParser struct {
 }
 
 func (p *TernaryMatchParser) parse(key string, describer FieldDescriber) client.MatchInterface {
-	// CHANGE search how to parse ternary
+
 	var field []byte
-	var lpm int64
+	var mask []byte
 	var err error
 
 	switch describer.Pattern {
 	case pattern_ipv4_addr:
 		{
-			// TODO copied from LPM
-			values := strings.Split(key, "/")
+			values := strings.Split(key, "$")
 			if len(values) != 2 {
 				log.Errorf("Error parsing match LPM -> %s", key)
 				return nil
@@ -131,24 +143,37 @@ func (p *TernaryMatchParser) parse(key string, describer FieldDescriber) client.
 			if err != nil {
 				log.Errorf("Error parsing field %s\n%v", values[0], err)
 			}
-			lpm, err = strconv.ParseInt(values[1], 10, 64)
+			mask = []byte(values[1])
 			if err != nil {
-				log.Errorf("Error parsing lpm %d", lpm)
+				log.Errorf("Error parsing mask %s", values[1])
 			}
 		}
 	case pattern_mac_addr:
-		// TODO
-
+		{
+			values := strings.Split(key, "$")
+			if len(values) != 2 {
+				log.Errorf("Error parsing match LPM -> %s", key)
+				return nil
+			}
+			field, err = conversion.MacToBinary(values[0])
+			if err != nil {
+				log.Errorf("Error parsing field %s\n%v", values[0], err)
+			}
+			mask = []byte(values[1])
+			if err != nil {
+				log.Errorf("Error parsing mask %s", values[1])
+			}
+		}
 	case pattern_port:
-		// TODO
+		// TODO - do nothing (?)
 
 	default:
 		// TODO - do nothing (?)
 	}
 
-	return client.MatchInterface(&client.LpmMatch{
+	return client.MatchInterface(&client.TernaryMatch{
 		Value: field,
-		PLen:  int32(lpm),
+		Mask:  mask,
 	})
 }
 
@@ -292,8 +317,7 @@ func ParseP4Info(p4Program string) *string {
 				Name:      key["name"].(string),
 				Bitwidth:  int(key["bitwidth"].(float64)),
 				MatchType: key["matchType"].(string),
-				// TODO Add mask if ternary match
-				Pattern: findIfKnownPattern(key["name"].(string), int(key["bitwidth"].(float64))),
+				Pattern:   findIfKnownPattern(key["name"].(string), int(key["bitwidth"].(float64))),
 			})
 		}
 

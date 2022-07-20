@@ -1,8 +1,8 @@
 s1:
-  program: simple1
+  program: asymmetric
   digest:
   rules:
-    - table: MyIngress.ipv4_lpm1
+    - table: MyIngress.ipv4_lpm
       key:
         - 10.0.1.1/24 #h1
       action: MyIngress.ipv4_forward
