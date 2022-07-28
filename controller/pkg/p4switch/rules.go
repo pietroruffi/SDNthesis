@@ -13,7 +13,7 @@ import (
 
 type Rule struct {
 	Table       string
-	Key         []string
+	Keys        []Key
 	Action      string
 	ActionParam []string `yaml:"action_param"`
 	Describer   RuleDescriber
@@ -28,11 +28,16 @@ type RuleDescriber struct {
 	ActionParams []FieldDescriber
 }
 
+type Key struct {
+	Value string
+	Mask  string // optional, used in keys with ternary match
+}
+
 type FieldDescriber struct {
 	Name      string
 	Bitwidth  int
-	MatchType string // (optional) used in keys
-	Pattern   string // (optional), if present the parser will use this to discriminate which function parses this field
+	MatchType string // optional, used in keys
+	Pattern   string // optional, if present the parser will use this to discriminate which function parses this field
 }
 
 type SwitchConfig struct {
@@ -115,13 +120,13 @@ func CreateTableEntry(sw *GrpcSwitch, rule Rule) *p4_v1.TableEntry {
 
 	return sw.p4RtC.NewTableEntry(
 		rule.Table,
-		parseMatchInterfaces(rule.Key, rule.Describer.Keys),
+		parseMatchInterfaces(rule.Keys, rule.Describer.Keys),
 		sw.p4RtC.NewTableActionDirect(rule.Action, parserActParam.parse(rule.ActionParam, rule.Describer.ActionParams)),
 		nil,
 	)
 }
 
-func parseMatchInterfaces(keys []string, describers []FieldDescriber) []client.MatchInterface {
+func parseMatchInterfaces(keys []Key, describers []FieldDescriber) []client.MatchInterface {
 	result := make([]client.MatchInterface, len(keys))
 	for idx, key := range keys {
 		parserMatch := getParserForMatchInterface(describers[idx].MatchType)

@@ -167,11 +167,11 @@
                             <td>{{ $rule.Table }}</td>
                             <td>{{ $rule.Action }}</td>
                             <td>
-                            {{ range $idx, $key := $rule.Key }}
+                            {{ range $idx, $key := $rule.Keys }}
                                 {{ if ne $idx 0 }}
                                 <br>
                                 {{ end }}
-                                {{ $key }}
+                                {{ $key.Value }} {{ $key.Mask }}
                             {{ end }}
                             </td>
                             <td>

@@ -124,14 +124,16 @@ func addRule(w http.ResponseWriter, r *http.Request) {
 		actualSwitch := getSwitchByName(sw)
 		rule_descr := findActionByIdAndTable(actualSwitch.GetProgramName(), idAction, idTable)
 
-		var inputKeys []string
-		var inputKey string
+		var inputKeys []p4switch.Key
+		var inputMask string
 		for idx, desc := range rule_descr.Keys {
-			inputKey = r.FormValue("key" + strconv.Itoa(idx))
 			if strings.ToUpper(desc.MatchType) == "TERNARY" {
-				inputKey = inputKey + "$" + r.FormValue("mask"+strconv.Itoa(idx))
+				inputMask = r.FormValue("mask" + strconv.Itoa(idx))
 			}
-			inputKeys = append(inputKeys, inputKey)
+			inputKeys = append(inputKeys, p4switch.Key{
+				Value: r.FormValue("key" + strconv.Itoa(idx)),
+				Mask:  inputMask,
+			})
 		}
 
 		var inputParam []string
@@ -141,7 +143,7 @@ func addRule(w http.ResponseWriter, r *http.Request) {
 
 		rule := p4switch.Rule{
 			Table:       rule_descr.TableName,
-			Key:         inputKeys,
+			Keys:        inputKeys,
 			Action:      rule_descr.ActionName,
 			ActionParam: inputParam,
 		}
