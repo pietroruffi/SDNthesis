@@ -143,10 +143,12 @@ func (p *TernaryMatchParser) parse(key string, describer FieldDescriber) client.
 			field, err = conversion.IpToBinary(values[0])
 			if err != nil {
 				log.Errorf("Error parsing field %s\n%v", values[0], err)
+				return nil
 			}
 			mask, err = hex.DecodeString(values[1])
 			if err != nil {
 				log.Errorf("Error parsing mask %s", values[1])
+				return nil
 			}
 		}
 	case pattern_mac_addr:
@@ -159,10 +161,12 @@ func (p *TernaryMatchParser) parse(key string, describer FieldDescriber) client.
 			field, err = conversion.MacToBinary(values[0])
 			if err != nil {
 				log.Errorf("Error parsing field %s\n%v", values[0], err)
+				return nil
 			}
 			mask, err = hex.DecodeString(values[1])
 			if err != nil {
 				log.Errorf("Error parsing mask %s", values[1])
+				return nil
 			}
 		}
 	case pattern_port:
@@ -186,7 +190,7 @@ func getParserForMatchInterface(parserType string) ParserMatchInterface {
 	case "EXACT":
 		return ParserMatchInterface(&ExactMatchParser{})
 	case "LPM":
-		return ParserMatchInterface(&LpmMatchParser{})
+		return ParserMatchInterface(&LpmMatchParser{}) // TO-DO Solo ipv4
 	case "TERNARY":
 		return ParserMatchInterface(&TernaryMatchParser{})
 	default:
@@ -200,7 +204,7 @@ type ParserActionParams interface {
 }
 
 // There's no need to define more than one parser, because ActionParameters are not influenced by matchType
-// but to keep everything more general (and for future extensions), have been defined a general structure and a default parser
+// but to keep everything more general (and for future extensions), had been defined a general structure and a default parser
 
 type DefaultParserActionParams struct{}
 
@@ -348,6 +352,7 @@ func ParseP4Info(p4Program string) *string {
 		}
 	}
 	resInByte, err := json.Marshal(result)
+
 	if err != nil {
 		return nil
 	}
@@ -390,7 +395,7 @@ func findIfKnownPattern(name string, bitwidth int) string {
 	return ""
 }
 
-// util function, check if an array of integer contains a value
+// Util function, check if an array of integer contains a value
 func contains_int(array []int, value int) bool {
 	for _, el := range array {
 		if el == value {
