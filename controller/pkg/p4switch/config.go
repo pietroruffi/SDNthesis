@@ -16,6 +16,7 @@ const (
 	p4Path    = "../p4/"
 )
 
+// Changes the configuration of switch, i.e. program currently executing on it, digests and rules
 func (sw *GrpcSwitch) ChangeConfig(newConfig *SwitchConfig) error {
 
 	sw.config = newConfig
@@ -32,34 +33,22 @@ func (sw *GrpcSwitch) ChangeConfig(newConfig *SwitchConfig) error {
 	return nil
 }
 
-func (sw *GrpcSwitch) ChangeConfigFile(configName string) error {
-	sw.config = nil
-	sw.initialConfigName = configName
-	if _, err := sw.p4RtC.SaveFwdPipeFromBytes(sw.readBin(), sw.readP4Info(), 0); err != nil {
-		return err
-	}
-	sw.InitiateConfig()
-	sw.EnableDigest()
-	time.Sleep(defaultWait)
-	if err := sw.p4RtC.CommitFwdPipe(); err != nil {
-		return err
-	}
-	return nil
-}
+func (sw *GrpcSwitch) ChangeConfigSync(newConfig *SwitchConfig) error {
 
-func (sw *GrpcSwitch) ChangeConfigFileSync(configName string) error {
-	sw.config = nil
-	sw.initialConfigName = configName
+	sw.config = newConfig
+
 	if _, err := sw.p4RtC.SetFwdPipeFromBytes(sw.readBin(), sw.readP4Info(), 0); err != nil {
 		return err
 	}
 	sw.InitiateConfig()
 	sw.EnableDigest()
+
 	return nil
 }
 
+// Uses API of p4_v1 to add entry into the switch
 func (sw *GrpcSwitch) AddTableEntry(entry *p4_v1.TableEntry) error {
-	if err := sw.p4RtC.InsertTableEntry(entry); err != nil { // InsertTableEntry in client/tables.go, sfrutta API di p4_v1 per inserire l'entry
+	if err := sw.p4RtC.InsertTableEntry(entry); err != nil {
 		sw.log.Errorf("Error adding entry: %+v\n%v", entry, err)
 		sw.errCh <- err
 		return err
@@ -69,8 +58,9 @@ func (sw *GrpcSwitch) AddTableEntry(entry *p4_v1.TableEntry) error {
 	return nil
 }
 
+// Uses API of p4_v1 to remove entry from the switch
 func (sw *GrpcSwitch) RemoveTableEntry(entry *p4_v1.TableEntry) error {
-	if err := sw.p4RtC.DeleteTableEntry(entry); err != nil { // DeleteTableEntry in client/tables.go, sfrutta API di p4_v1 per rimuovere l'entry
+	if err := sw.p4RtC.DeleteTableEntry(entry); err != nil {
 		sw.log.Errorf("Error adding entry: %+v\n%v", entry, err)
 		sw.errCh <- err
 		return err
@@ -80,9 +70,7 @@ func (sw *GrpcSwitch) RemoveTableEntry(entry *p4_v1.TableEntry) error {
 	return nil
 }
 
-// TODO write better
-// getConfig returns the configuration of the switch, if for some reasons config is nil, tries to read the configuration from file .yml and then returns, if also
-// this try fails, return error
+// Returns the alctual configuration of the switch, if config is nil (like when the switch is first started) tries to read the configuration from file .yml
 func (sw *GrpcSwitch) GetConfig() (*SwitchConfig, error) {
 	if sw.config == nil {
 		config, err := parseSwConfig(sw.GetName(), sw.initialConfigName)
@@ -94,6 +82,7 @@ func (sw *GrpcSwitch) GetConfig() (*SwitchConfig, error) {
 	return sw.config, nil
 }
 
+// Parses the configuration of switch sw from file .yml
 func parseSwConfig(swName string, configFileName string) (*SwitchConfig, error) {
 	configs := make(map[string]SwitchConfig)
 	configFile, err := ioutil.ReadFile(configFileName)
@@ -105,13 +94,12 @@ func parseSwConfig(swName string, configFileName string) (*SwitchConfig, error) 
 	}
 	config := configs[swName]
 	if config.Program == "" {
-		return nil, fmt.Errorf("switch config not found in file %s", configFileName)
+		return nil, fmt.Errorf("Switch config not found in file %s", configFileName)
 	}
 	return &config, nil
 }
 
-// TODO write different
-// Read config of switch from the initiaConfigfile .yml and put it in the SwitchConfig field, then add the rules
+// Use this function when switch is started or when the configuration is changed, it gets rules from configuration and add them into the switch
 func (sw *GrpcSwitch) InitiateConfig() error {
 	config, err := sw.GetConfig()
 	if err != nil {

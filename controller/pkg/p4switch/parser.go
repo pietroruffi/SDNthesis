@@ -5,7 +5,6 @@ import (
 	"controller/pkg/util/conversion"
 	"encoding/hex"
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"os"
 	"strconv"
@@ -93,7 +92,9 @@ func (p *LpmMatchParser) parse(key Key, describer FieldDescriber) client.MatchIn
 				log.Errorf("Error parsing lpm %d", lpm)
 			}
 		}
-		// TODO ADD COMMENT ONLY IPV4
+	default:
+		return nil
+		// Match type LPM can only be related to ipv4 addresses
 	}
 
 	return client.MatchInterface(&client.LpmMatch{
@@ -139,11 +140,8 @@ func (p *TernaryMatchParser) parse(key Key, describer FieldDescriber) client.Mat
 				return nil
 			}
 		}
-	case pattern_port:
-		// TODO - do nothing (?)
-
 	default:
-		// TODO - do nothing (?)
+		return nil
 	}
 
 	return client.MatchInterface(&client.TernaryMatch{
@@ -198,13 +196,15 @@ func (p *DefaultParserActionParams) parse(params []string, describers []FieldDes
 				num, _ := strconv.ParseInt(par, 10, 64)
 				field, _ = conversion.UInt64ToBinaryCompressed(uint64(num))
 			}
+		default:
+			return nil
 		}
 		actionByte[idx] = field
 	}
 	return actionByte
 }
 
-// As said before there is only one parser for ActionParameters, so we return that one regardless of parserType
+// As said before there is only one parser for ActionParameters, so we return that one, regardless of parserType
 
 func getParserForActionParams(parserType string) ParserActionParams {
 	return ParserActionParams(&DefaultParserActionParams{})
@@ -218,7 +218,7 @@ func ParseP4Info(p4Program string) *string {
 	jsonFile, err := os.Open(filename)
 
 	if err != nil {
-		fmt.Println(err)
+		log.Errorf("%v", err)
 		return nil
 	}
 

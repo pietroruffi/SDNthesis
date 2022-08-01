@@ -116,7 +116,7 @@ func addRule(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// To handle this request:
-		// 1) extract informations of actual rule
+		// 1) extract informations of rule
 		// 2) add new rule to switch sw
 		// 3) write a success/failure message on right variable
 		// 4) show index page by calling http.Redirect(w, r, "/", http.StatusSeeOther)
@@ -198,34 +198,27 @@ func removeRule(w http.ResponseWriter, r *http.Request) {
 
 func executeProgram(w http.ResponseWriter, r *http.Request) {
 
-	// TO-DO handle this request:
 	// 1) change program in execution on switch
 	// 2) write a success/failure message on right variable
 	// 3) show index page by calling http.Redirect(w, r, "/", http.StatusSeeOther)
 
-	configName := r.URL.Query().Get("program")
-	/*
-		swName := r.URL.Query().Get("switch")
+	program := r.URL.Query().Get("program")
 
-		sw := getSwitchByName(swName)
+	swName := r.URL.Query().Get("switch")
 
-		ctx, cancel := context.WithCancel(context.Background())
-		if err := sw.ChangeConfig(configName); err != nil { //ChangeConfig in p4switch/config.go
-			if status.Convert(err).Code() == codes.Canceled {
-				sw.GetLogger().Warn("Failed to update config, restarting")
-				errorMessage = "Failed to update config, restarting"
-				if err := sw.RunSwitch(ctx); err != nil {
-					sw.GetLogger().Errorf("Cannot start")
-					sw.GetLogger().Errorf("%v", err)
-				}
-			} else {
-				sw.GetLogger().Errorf("Error updating swConfig: %v", err)
-			}
-		}
-		sw.GetLogger().Tracef("Config updated to %s, ", configName)
-		cancel()
-	*/
-	errorMessage = "You clicket on execute for config '" + configName + "', but not implemented yet"
+	sw := getSwitchByName(swName)
+
+	err := sw.ChangeConfig(&p4switch.SwitchConfig{
+		Program: program,
+		Digest:  []string{},
+		Rules:   []p4switch.Rule{},
+	})
+
+	if err != nil {
+		errorMessage = "Cannot change configuration: " + err.Error()
+	} else {
+		successMessage = "Config updated to " + program
+	}
 
 	http.Redirect(w, r, "/", http.StatusSeeOther)
 
