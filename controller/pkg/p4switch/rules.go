@@ -114,19 +114,19 @@ func CreateTableEntry(sw *GrpcSwitch, rule Rule) (*p4_v1.TableEntry, error) {
 
 	descr := getDescriberFor(sw.GetProgramName(), rule)
 	if descr == nil {
-		return nil, fmt.Errorf("Error getting describer for rule %v", rule)
+		return nil, fmt.Errorf("Error getting describer for rule %+v", rule)
 	}
 	rule.Describer = descr
 
 	interfaces := parseKeys(rule.Keys, rule.Describer.Keys)
 	if interfaces == nil {
-		return nil, fmt.Errorf("Error parsing keys of rule %v", rule)
+		return nil, fmt.Errorf("Error parsing keys of rule %+v", rule)
 	}
 
 	parserActParam := getParserForActionParams("default")
 	actionParams := parserActParam.parse(rule.ActionParam, rule.Describer.ActionParams)
 	if actionParams == nil {
-		return nil, fmt.Errorf("Error parsing action parameters of rule %v", rule)
+		return nil, fmt.Errorf("Error parsing action parameters of rule %+v", rule)
 	}
 
 	return sw.p4RtC.NewTableEntry(

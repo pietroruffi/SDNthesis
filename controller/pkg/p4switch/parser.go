@@ -41,22 +41,41 @@ type ExactMatchParser struct {
 func (p *ExactMatchParser) parse(key Key, describer FieldDescriber) client.MatchInterface {
 
 	var field []byte
+	var err error
 
 	switch describer.Pattern {
-	// pattern is added in parseP4Info(), defines if the key satisfies a known pattern and had to be parsed in a specific way
+	// Pattern is added in function parseP4Info(), defines if the key satisfies a known pattern and had to be parsed in a specific way
 	case pattern_mac_addr:
 		{
-			field, _ = conversion.MacToBinary(key.Value)
+			field, err = conversion.MacToBinary(key.Value)
+			if err != nil {
+				log.Errorf("Error parsing match EXACT %s", key)
+				return nil
+			}
 		}
 	case pattern_ipv4_addr:
 		{
-			field, _ = conversion.IpToBinary(key.Value)
+			field, err = conversion.IpToBinary(key.Value)
+			if err != nil {
+				log.Errorf("Error parsing match EXACT %s", key)
+				return nil
+			}
 		}
 	case pattern_port:
 		{
-			num, _ := strconv.ParseInt(key.Value, 10, 64)
-			field, _ = conversion.UInt64ToBinaryCompressed(uint64(num))
+			num, err := strconv.ParseInt(key.Value, 10, 64)
+			if err != nil {
+				log.Errorf("Error parsing match EXACT %s", key)
+				return nil
+			}
+			field, err = conversion.UInt64ToBinaryCompressed(uint64(num))
+			if err != nil {
+				log.Errorf("Error parsing match EXACT %s", key)
+				return nil
+			}
 		}
+	default:
+		return nil
 	}
 
 	// add to result the key trasformed into []byte
@@ -86,10 +105,12 @@ func (p *LpmMatchParser) parse(key Key, describer FieldDescriber) client.MatchIn
 			field, err = conversion.IpToBinary(values[0])
 			if err != nil {
 				log.Errorf("Error parsing field %s\n%v", values[0], err)
+				return nil
 			}
 			lpm, err = strconv.ParseInt(values[1], 10, 64)
 			if err != nil {
 				log.Errorf("Error parsing lpm %d", lpm)
+				return nil
 			}
 		}
 	default:
@@ -104,8 +125,7 @@ func (p *LpmMatchParser) parse(key Key, describer FieldDescriber) client.MatchIn
 }
 
 // Specific parser for MatchInterfaces with matchType: "ternary"
-type TernaryMatchParser struct {
-}
+type TernaryMatchParser struct{}
 
 func (p *TernaryMatchParser) parse(key Key, describer FieldDescriber) client.MatchInterface {
 
@@ -180,21 +200,38 @@ func (p *DefaultParserActionParams) parse(params []string, describers []FieldDes
 
 	actionByte := make([][]byte, len(params))
 	var field []byte
+	var err error
 
 	for idx, par := range params {
 		switch describers[idx].Pattern {
 		case pattern_mac_addr:
 			{
-				field, _ = conversion.MacToBinary(par)
+				field, err = conversion.MacToBinary(par)
+				if err != nil {
+					log.Errorf("Error parsing parameter %s", par)
+					return nil
+				}
 			}
 		case pattern_ipv4_addr:
 			{
-				field, _ = conversion.IpToBinary(par)
+				field, err = conversion.IpToBinary(par)
+				if err != nil {
+					log.Errorf("Error parsing parameter %s", par)
+					return nil
+				}
 			}
 		case pattern_port:
 			{
-				num, _ := strconv.ParseInt(par, 10, 64)
-				field, _ = conversion.UInt64ToBinaryCompressed(uint64(num))
+				num, err := strconv.ParseInt(par, 10, 64)
+				if err != nil {
+					log.Errorf("Error parsing parameter %s", par)
+					return nil
+				}
+				field, err = conversion.UInt64ToBinaryCompressed(uint64(num))
+				if err != nil {
+					log.Errorf("Error parsing parameter %s", par)
+					return nil
+				}
 			}
 		default:
 			return nil
@@ -210,7 +247,7 @@ func getParserForActionParams(parserType string) ParserActionParams {
 	return ParserActionParams(&DefaultParserActionParams{})
 }
 
-// return json of []RuleDescriber
+// Return JSON of []RuleDescriber
 func ParseP4Info(p4Program string) *string {
 
 	filename := pathJsonInfo + p4Program + extJsonInfo
