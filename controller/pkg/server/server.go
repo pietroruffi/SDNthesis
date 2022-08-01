@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"html/template"
+	"io/ioutil"
 	"net/http"
 	"os"
 	"strconv"
@@ -34,8 +35,7 @@ type AddRulePageData struct {
 }
 
 const (
-	pathJsonInfo = "../p4/JsonOfP4info/"
-	extJsonInfo  = ".p4.p4info.json"
+	pathP4folder = "../p4/"
 	serverPath   = "./pkg/server/"
 )
 
@@ -66,9 +66,21 @@ func StartServer(switches []*p4switch.GrpcSwitch) {
 
 func getRoot(w http.ResponseWriter, r *http.Request) {
 
-	// TO-DO read available programs names
+	// Read available programs names
 
-	programNames := []string{"simple", "simple1", "asymmetric"}
+	files, err := ioutil.ReadDir(pathP4folder)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	var programNames []string
+	for _, file := range files {
+		fileName := file.Name()
+		if !file.IsDir() && strings.HasSuffix(fileName, ".p4") {
+			p4ProgramName := fileName[:len(fileName)-len(".p4")]
+			programNames = append(programNames, p4ProgramName)
+		}
+	}
 
 	var swData []SwitchServerData
 
@@ -90,7 +102,7 @@ func getRoot(w http.ResponseWriter, r *http.Request) {
 
 	tmpl := template.Must(template.ParseFiles(serverPath + "index.html"))
 
-	err := tmpl.Execute(w, data)
+	err = tmpl.Execute(w, data)
 
 	if err != nil {
 		log.Errorf(err.Error())
