@@ -30,7 +30,7 @@ In order to keep things similar, this parser had been defined like the one for m
 
 A difference between Action_Parameters and Keys is that Action_Parameters are not influenced by match type; this reflects in the parses because there's no need to define more than one parser for Action_Parameters (it have been defined only one defaultParser, but with this implementation we allow to add new parsers differentiating by some criterious, like the parsers for MatchInterface which are differentiated by matchType)
 
-## How to add extend parser.go
+## How to extend parser.go
 
 If want to add new parser for MatchInterfaces or ActionParameters, need to define a new struct which exposes the method "parse" for the field you choose.
 
