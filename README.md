@@ -4,7 +4,7 @@ There are two different types of fields, which have to be parsed in different wa
 
 ## ParseP4Info
 
-Method ParseP4Info accept the name of the name of a p4_program and returns a JSON string cointaining the `[]RuleDescriber` extracted from the file `p4_program.p4.p4info.json`
+Method ParseP4Info accept the name of the name of a p4_program and returns a JSON string cointaining the `[]RuleDescriber` extracted from [P4Info](https://pkg.go.dev/github.com/p4lang/p4runtime@v1.3.0/go/p4/config/v1#P4Info)
 
 The fields extracted from file for every action are:
 ```
