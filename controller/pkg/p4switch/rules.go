@@ -112,7 +112,7 @@ func (sw *GrpcSwitch) GetDigests() []string {
 // Uses funcions of parser.go in order to parse Keys and ActionParameters
 func CreateTableEntry(sw *GrpcSwitch, rule Rule) (*p4_v1.TableEntry, error) {
 
-	descr := getDescriberFor(sw.GetProgramName(), rule)
+	descr := getDescriberFor(sw, rule)
 	if descr == nil {
 		return nil, fmt.Errorf("Error getting describer for rule %+v", rule)
 	}

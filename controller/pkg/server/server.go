@@ -77,7 +77,7 @@ func getRoot(w http.ResponseWriter, r *http.Request) {
 		swData = append(swData, SwitchServerData{
 			Name:           sw.GetName(),
 			ProgramName:    sw.GetProgramName(),
-			ProgramActions: getDescribersForProgram(sw.GetProgramName()),
+			ProgramActions: getDescribersForSwitch(sw),
 			InstalledRules: sw.GetInstalledRules(),
 		})
 	}
@@ -122,7 +122,7 @@ func addRule(w http.ResponseWriter, r *http.Request) {
 		// 4) show index page by calling http.Redirect(w, r, "/", http.StatusSeeOther)
 
 		actualSwitch := getSwitchByName(sw)
-		rule_descr := findActionByIdAndTable(actualSwitch.GetProgramName(), idAction, idTable)
+		rule_descr := findActionByIdAndTable(actualSwitch, idAction, idTable)
 
 		var inputKeys []p4switch.Key
 		var inputMask string
@@ -164,7 +164,7 @@ func addRule(w http.ResponseWriter, r *http.Request) {
 
 		data := AddRulePageData{
 			SwitchName: sw,
-			Rule:       *findActionByIdAndTable(actualSwitch.GetProgramName(), idAction, idTable),
+			Rule:       *findActionByIdAndTable(actualSwitch, idAction, idTable),
 		}
 
 		tmpl := template.Must(template.ParseFiles(serverPath + "addRule.html"))
@@ -233,8 +233,8 @@ func getSwitchByName(name string) *p4switch.GrpcSwitch {
 	return nil
 }
 
-func getDescribersForProgram(p4ProgramName string) []p4switch.RuleDescriber {
-	res := *p4switch.ParseP4Info(p4ProgramName)
+func getDescribersForSwitch(sw *p4switch.GrpcSwitch) []p4switch.RuleDescriber {
+	res := *p4switch.ParseP4Info(sw)
 
 	var describers []p4switch.RuleDescriber
 
@@ -243,8 +243,8 @@ func getDescribersForProgram(p4ProgramName string) []p4switch.RuleDescriber {
 	return describers
 }
 
-func findActionByIdAndTable(program string, idAction int, idTable int) *p4switch.RuleDescriber {
-	for _, action := range getDescribersForProgram(program) {
+func findActionByIdAndTable(sw *p4switch.GrpcSwitch, idAction int, idTable int) *p4switch.RuleDescriber {
+	for _, action := range getDescribersForSwitch(sw) {
 		if action.ActionId == idAction && action.TableId == idTable {
 			return &action
 		}

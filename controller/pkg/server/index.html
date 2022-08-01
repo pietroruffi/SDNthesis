@@ -115,7 +115,7 @@
                                     <ul>
                                         {{ range $key := $rule.Keys }}
                                         <li>
-                                            {{ $key.Name }} (bit&lt;{{ $key.Bitwidth }}&gt;), match_type: {{ $key.MatchType }}
+                                            {{ $key.Name }} (bit&lt;{{ $key.Bitwidth }}&gt;), match: {{ $key.MatchType }}
                                         </li>
                                         {{end}}
                                     </ul>
