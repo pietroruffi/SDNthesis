@@ -67,7 +67,6 @@ func StartServer(switches []*p4switch.GrpcSwitch) {
 func getRoot(w http.ResponseWriter, r *http.Request) {
 
 	// TO-DO read available programs names
-	// and when doing this PARSE the .p4 in .p4.p4info.json
 
 	programNames := []string{"simple", "simple1", "asymmetric"}
 

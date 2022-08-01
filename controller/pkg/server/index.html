@@ -105,7 +105,7 @@
                             <div id='collapse{{$switch.Name}}Rule{{$index_rule}}' class='accordion-collapse collapse' aria-labelledby='heading{{$switch.Name}}Rule{{$index_rule}}'
                                 data-bs-parent='#accordion{{$switch.Name}}'>
                                 <div class='accordion-body'>
-                                    <strong>Table</strong><br>
+                                    <strong>Table&nbsp;<img src="./web/img/table.svg"></strong><br>
                                     <ul>
                                         <li>
                                             {{$rule.TableName}}
@@ -122,7 +122,7 @@
                                     {{ if not $rule.ActionParams }}
                                         <strong>No parameter required</strong><br><br>
                                     {{ else }}
-                                        <strong>Parameters</strong><br>
+                                        <strong>Parameters&nbsp;<img src="./web/img/card-list.svg"></strong><br>
                                         <ul>
                                             {{ range $param := $rule.ActionParams }}
                                             <li>
@@ -154,10 +154,10 @@
                     <table class="table text-center">
                         <thead>
                         <tr>
-                            <th scope="col">Table</th>
-                            <th scope="col">Action</th>
-                            <th scope="col">Key</th>
-                            <th scope="col">Params</th>
+                            <th scope="col">Table&nbsp;<img src="./web/img/table.svg"></th>
+                            <th scope="col">Action&nbsp;<img src="./web/img/action.svg"></th>
+                            <th scope="col">Key&nbsp;<img src="./web/img/key.svg"></th>
+                            <th scope="col">Params&nbsp;<img src="./web/img/card-list.svg"></th>
                             <th scope="col">&nbsp;</th>
                         </tr>
                         </thead>
