@@ -1,27 +1,44 @@
 # Parser P4
- 
- 
-## Implementation of parser.go
 
-### ParseP4Info(p4Program string) *string
+There are two different types of fields, which have to be parsed in different ways: Keys and Action_Parameters, in order to do this we defined some util functions:
 
-There are two different types of fields, which have to be parsed in different ways: Keys and Action_Parameters
+## ParseP4Info
 
-The parser firsty offers method ParseP4Info, which accept the name of the name of p4 program and returns a string cointaining a JSON of []RuleDescriber extracted from the file p4ProgramName.p4.p4info.json
+Method ParseP4Info accept the name of the name of a p4_program and returns a JSON string cointaining the `[]RuleDescriber` extracted from the file `p4_program.p4.p4info.json`
 
-The fields extracted from file are
-- TableName
-- TableId
-- Keys ( []FieldDescriber )
-- ActionName
-- ActionId
-- ActionParams ( []FieldDescriber )
+The fields extracted from file for every action are:
+```
+TableName
+TableId
+Keys ( []FieldDescriber )
+ActionName
+ActionId
+ActionParams ( []FieldDescriber )
+```
 
-The struct FieldDescriber has a field called Pattern, filled using the function findIfKnownPattern, which research if the field respects a known pattern (es. ipv4_address), then the Pattern will be used from parsers to know how to properly parse parameters/keys
+The struct FieldDescriber contains a *Pattern*, filled using the function `findIfKnownPattern`, which research if the key/parameter respects a known pattern (ex. a 32 bitwidth field with "addr" in his name is recognized as an ipv4_address). Then the Pattern will be used by parsers to know how to properly parse the parameter/key
 
-### ParserMatchInterface
+## ParserMatchInterface
 
-In order to parse Keys, it had been defined an interface ParserMatchInterface which exposes the method parse for one key, and returns the corrispondent MatchInterface
+In order to parse Keys, it had been defined an interface ParserMatchInterface, which exposes the method parse(..) for one key, and returns the parsed MatchInterface
 
-To differentiate 
+Since there are different match types for Keys (ex. EXACT, TERNARY, LPM, ...), every match type has his own parser, which can be obtained by the method `getParserForMatchInterface(parserType string)`, a sort of parser factory, that returns the parser for matchType requested, on which the parse method can be invoked
 
+## ParserActionParams
+
+In order to keep things similar, this parser had been defined like the one for match interfaces, so it has an interface ParserActionParams which exposes the method parse(..), but this time this method parses all action parameters together and returns the corrisponding `[][]byte`
+
+A difference between Action_Parameters and Keys is that Action_Parameters are not influenced by match type; this reflects in the parses because there's no need to define more than one parser for Action_Parameters (it have been defined only one defaultParser, but with this implementation we allow to add new parsers differentiating by some criterious, like the parsers for MatchInterface which are differentiated by matchType)
+
+## How to extend parser.go
+
+If want to add new parser for MatchInterfaces or ActionParameters, need to define a new struct which exposes the method "parse" for the field you choose.
+
+For example a new parser for MatchInterfaces should define:
+```
+type NewMatchParser struct{}
+func (p *NewMatchParser) parse(key Key, describer FieldDescriber) client.MatchInterface { ... }
+```
+Then in the function parse you need to define the parsing logic for every Pattern that could be parsed
+
+If want to add a new *Pattern* (i.e. description of a field, indicating that it had to be parsed in a specific way), it can be added in the method findIfKnownPattern, and then the parsing logic should be added in every parser that could parse the field
