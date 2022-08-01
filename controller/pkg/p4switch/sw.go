@@ -9,16 +9,16 @@ import (
 )
 
 type GrpcSwitch struct {
-	id             uint64
-	configName     string
-	ports          int
-	addr           string
-	log            *log.Entry
-	errCh          chan error
-	certFile       string
-	p4RtC          *client.Client
-	messageCh      chan *p4_v1.StreamMessageResponse
-	installedRules []Rule
+	id                uint64
+	initialConfigName string
+	config            *SwitchConfig
+	ports             int
+	addr              string
+	log               *log.Entry
+	errCh             chan error
+	certFile          string
+	p4RtC             *client.Client
+	messageCh         chan *p4_v1.StreamMessageResponse
 }
 
 func (sw *GrpcSwitch) GetName() string {

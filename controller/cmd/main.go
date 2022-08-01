@@ -3,12 +3,7 @@ package main
 import (
 	"context"
 	"flag"
-	"fmt"
-	"os"
 	"time"
-
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 
 	"controller/pkg/p4switch"
 	"controller/pkg/server"
@@ -72,45 +67,47 @@ func main() {
 	}
 
 	server.StartServer(switchs)
-
-	// Quando qualcuno preme invio cambio configurazione allo switch
-
-	buff := make([]byte, 10)
-	n, _ := os.Stdin.Read(buff)
-	newConfig := configName // configName e configNameAlt passati come parametro di invocazione
-	for n > 0 {             // while "true"
-		if newConfig == configName {
-			newConfig = configNameAlt
-		} else {
-			newConfig = configName
-		}
-		log.Infof("Changing switch config to %s", newConfig)
-		for _, sw := range switchs {
-			go changeConfig(ctx, sw, newConfig)
-		}
-		log.Info("Press enter to change switch config or EOF to terminate")
-		n, _ = os.Stdin.Read(buff)
-	}
-
-	fmt.Println()
 	cancel()
-	time.Sleep(defaultWait)
+	// Quando qualcuno preme invio cambio configurazione allo switch
+	/*
+		buff := make([]byte, 10)
+		n, _ := os.Stdin.Read(buff)
+		newConfig := configName // configName e configNameAlt passati come parametro di invocazione
+		for n > 0 {             // while "true"
+			if newConfig == configName {
+				newConfig = configNameAlt
+			} else {
+				newConfig = configName
+			}
+			log.Infof("Changing switch config to %s", newConfig)
+			for _, sw := range switchs {
+				go changeConfig(ctx, sw, newConfig)
+			}
+			log.Info("Press enter to change switch config or EOF to terminate")
+			n, _ = os.Stdin.Read(buff)
+		}
+
+		fmt.Println()
+		cancel()
+		time.Sleep(defaultWait)
+	*/
 }
 
 func changeConfig(ctx context.Context, sw *p4switch.GrpcSwitch, configName string) {
+	/*
+		if err := sw.ChangeConfig(configName); err != nil { //ChangeConfig in p4switch/config.go
 
-	if err := sw.ChangeConfig(configName); err != nil { //ChangeConfig in p4switch/config.go
-
-		if status.Convert(err).Code() == codes.Canceled {
-			sw.GetLogger().Warn("Failed to update config, restarting")
-			if err := sw.RunSwitch(ctx); err != nil {
-				sw.GetLogger().Errorf("Cannot start")
-				sw.GetLogger().Errorf("%v", err)
+			if status.Convert(err).Code() == codes.Canceled {
+				sw.GetLogger().Warn("Failed to update config, restarting")
+				if err := sw.RunSwitch(ctx); err != nil {
+					sw.GetLogger().Errorf("Cannot start")
+					sw.GetLogger().Errorf("%v", err)
+				}
+			} else {
+				sw.GetLogger().Errorf("Error updating swConfig: %v", err)
 			}
-		} else {
-			sw.GetLogger().Errorf("Error updating swConfig: %v", err)
+			return
 		}
-		return
-	}
-	sw.GetLogger().Tracef("Config updated to %s, ", configName)
+		sw.GetLogger().Tracef("Config updated to %s, ", configName)
+	*/
 }

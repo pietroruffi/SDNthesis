@@ -148,13 +148,12 @@ func addRule(w http.ResponseWriter, r *http.Request) {
 			ActionParam: inputParam,
 		}
 
-		res := actualSwitch.AddTableEntry(p4switch.CreateTableEntry(actualSwitch, rule))
+		res := actualSwitch.AddRule(rule)
 
 		if res != nil {
 			errorMessage = "Failed to add entry: " + res.Error()
 		} else {
 			successMessage = "Entry added with success"
-			actualSwitch.AddToInstalledRules(rule)
 		}
 
 		http.Redirect(w, r, "/", http.StatusSeeOther)
@@ -185,15 +184,12 @@ func removeRule(w http.ResponseWriter, r *http.Request) {
 	sw := getSwitchByName(swName)
 	numRule, _ := strconv.Atoi(r.URL.Query().Get("number"))
 
-	toDelete := sw.GetInstalledRules()[numRule]
-
-	res := sw.RemoveTableEntry(p4switch.CreateTableEntry(sw, toDelete))
+	res := sw.RemoveRule(numRule)
 
 	if res != nil {
 		errorMessage = "Failed to delete entry: " + res.Error()
 	} else {
 		successMessage = "Entry deleted with success"
-		sw.RemoveFromInstalledRules(numRule)
 	}
 
 	http.Redirect(w, r, "/", http.StatusSeeOther)

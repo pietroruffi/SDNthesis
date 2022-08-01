@@ -21,13 +21,12 @@ const (
 
 func CreateSwitch(deviceID uint64, configName string, ports int, certFile string) *GrpcSwitch {
 	return &GrpcSwitch{
-		id:             deviceID,
-		configName:     configName,
-		ports:          ports,
-		addr:           fmt.Sprintf("%s:%d", defaultAddr, defaultPort+deviceID),
-		log:            log.WithField("ID", deviceID),
-		certFile:       certFile,
-		installedRules: []Rule{},
+		id:                deviceID,
+		initialConfigName: configName,
+		ports:             ports,
+		addr:              fmt.Sprintf("%s:%d", defaultAddr, defaultPort+deviceID),
+		log:               log.WithField("ID", deviceID),
+		certFile:          certFile,
 	}
 	// GrpcSwitch (sw.go) contiene anche:
 	//	- p4RtC      *client.Client		--inizializzato in RunSwitch
@@ -91,7 +90,7 @@ func (sw *GrpcSwitch) RunSwitch(ct context.Context) error {
 	go sw.handleStreamMessages()
 	go sw.startRunner(ctx, cancel)
 	//
-	sw.addRules() // -- AddRules! (p4switch/config.go) --
+	sw.InitiateConfig()
 	sw.EnableDigest()
 	//
 	sw.log.Info("Switch started")

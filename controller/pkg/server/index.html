@@ -65,7 +65,7 @@
                 <!-- Ripeti la parte sottostante per ogni switch -->
                 {{ $programs := .ProgramNames }}
                 {{ range $switch := .Switches }}
-                <h2 class='mt-4'><a class='btn btn-light fs-4 p-2 w-100' style='font-weight: 500' href='#switch{{$switch.Name}}'
+                    <h2 class='mt-4'><a class='btn btn-light fs-4 p-2 w-100' style='font-weight: 500' href='#switch{{$switch.Name}}'
                         data-bs-toggle='collapse'>Switch {{$switch.Name}}</a></h2>
                     <ul class='list-group collapse' id='switch{{$switch.Name}}'>
                         {{range $program := $programs}}
