@@ -141,7 +141,7 @@ func CreateTableEntry(sw *GrpcSwitch, rule Rule) (*p4_v1.TableEntry, error) {
 func parseKeys(keys []Key, describers []FieldDescriber) []client.MatchInterface {
 	result := make([]client.MatchInterface, len(keys))
 	for idx, key := range keys {
-		parserMatch := getParserForMatchInterface(describers[idx].MatchType)
+		parserMatch := getParserForKeys(describers[idx].MatchType)
 		result[idx] = parserMatch.parse(key, describers[idx])
 		if result[idx] == nil {
 			return nil

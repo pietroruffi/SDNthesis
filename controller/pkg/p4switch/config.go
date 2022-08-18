@@ -70,7 +70,7 @@ func (sw *GrpcSwitch) RemoveTableEntry(entry *p4_v1.TableEntry) error {
 	return nil
 }
 
-// Returns the alctual configuration of the switch, if config is nil (like when the switch is first started) tries to read the configuration from file .yml
+// Returns the actual configuration of the switch, if config is nil (like when the switch is first started) tries to read the configuration from file .yml
 func (sw *GrpcSwitch) GetConfig() (*SwitchConfig, error) {
 	if sw.config == nil {
 		config, err := parseSwConfig(sw.GetName(), sw.initialConfigName)
