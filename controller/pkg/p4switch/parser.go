@@ -21,19 +21,12 @@ const (
 	extJsonInfo  = ".p4.p4info.json"
 )
 
-// ActionDescr used in parseP4Info() to keep all fields of an action together, and not in different arrays where elements related have same index
-type ActionDescr struct {
-	ActionName   string
-	ActionId     int
-	ActionParams []FieldDescriber
-}
-
-// Define general parser for MatchInterfaces
-type ParserMatchInterface interface {
+// Define general parser for Keys
+type ParserKeys interface {
 	parse(key Key, describer FieldDescriber) client.MatchInterface
 }
 
-// Specific parser for MatchInterfaces with matchType: "exact"
+// Specific parser for Keys with matchType: "exact"
 type ExactMatchParser struct {
 }
 
@@ -83,7 +76,7 @@ func (p *ExactMatchParser) parse(key Key, describer FieldDescriber) client.Match
 	})
 }
 
-// Specific parser for MatchInterfaces with matchType: "lpm"
+// Specific parser for Keys with matchType: "lpm"
 type LpmMatchParser struct {
 }
 
@@ -123,7 +116,7 @@ func (p *LpmMatchParser) parse(key Key, describer FieldDescriber) client.MatchIn
 	})
 }
 
-// Specific parser for MatchInterfaces with matchType: "ternary"
+// Specific parser for Keys with matchType: "ternary"
 type TernaryMatchParser struct{}
 
 func (p *TernaryMatchParser) parse(key Key, describer FieldDescriber) client.MatchInterface {
@@ -171,15 +164,15 @@ func (p *TernaryMatchParser) parse(key Key, describer FieldDescriber) client.Mat
 
 // A kind of "ParserFactory", returns the parser for the specified matchType (exact | lpm | ternary)
 
-func getParserForMatchInterface(parserType string) ParserMatchInterface {
+func getParserForKeys(parserType string) ParserKeys {
 
 	switch strings.ToUpper(parserType) {
 	case "EXACT":
-		return ParserMatchInterface(&ExactMatchParser{})
+		return ParserKeys(&ExactMatchParser{})
 	case "LPM":
-		return ParserMatchInterface(&LpmMatchParser{})
+		return ParserKeys(&LpmMatchParser{})
 	case "TERNARY":
-		return ParserMatchInterface(&TernaryMatchParser{})
+		return ParserKeys(&TernaryMatchParser{})
 	default:
 		return nil
 	}
