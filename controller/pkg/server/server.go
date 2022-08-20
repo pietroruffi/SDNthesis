@@ -4,7 +4,6 @@ import (
 	"controller/pkg/p4switch"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"html/template"
 	"io/ioutil"
 	"net/http"
@@ -43,6 +42,7 @@ var errorMessage string
 var successMessage string
 
 var allSwitches []*p4switch.GrpcSwitch
+var programNames []string
 
 func StartServer(switches []*p4switch.GrpcSwitch) {
 	allSwitches = switches
@@ -68,20 +68,20 @@ func getRoot(w http.ResponseWriter, r *http.Request) {
 
 	// Read available programs names
 
-	files, err := ioutil.ReadDir(pathP4folder)
-	if err != nil {
-		log.Fatal(err)
-	}
+	if programNames == nil {
+		files, err := ioutil.ReadDir(pathP4folder)
+		if err != nil {
+			log.Fatal(err)
+		}
 
-	var programNames []string
-	for _, file := range files {
-		fileName := file.Name()
-		if !file.IsDir() && strings.HasSuffix(fileName, ".p4") {
-			p4ProgramName := fileName[:len(fileName)-len(".p4")]
-			programNames = append(programNames, p4ProgramName)
+		for _, file := range files {
+			fileName := file.Name()
+			if !file.IsDir() && strings.HasSuffix(fileName, ".p4") {
+				p4ProgramName := fileName[:len(fileName)-len(".p4")]
+				programNames = append(programNames, p4ProgramName)
+			}
 		}
 	}
-
 	var swData []SwitchServerData
 
 	for _, sw := range allSwitches {
@@ -102,7 +102,7 @@ func getRoot(w http.ResponseWriter, r *http.Request) {
 
 	tmpl := template.Must(template.ParseFiles(serverPath + "index.html"))
 
-	err = tmpl.Execute(w, data)
+	err := tmpl.Execute(w, data)
 
 	if err != nil {
 		log.Errorf(err.Error())
@@ -114,15 +114,38 @@ func getRoot(w http.ResponseWriter, r *http.Request) {
 
 func addRule(w http.ResponseWriter, r *http.Request) {
 
-	sw := r.URL.Query().Get("switch")
+	swName := r.URL.Query().Get("switch")
+	paramIdAction := r.URL.Query().Get("idAction")
+	paramIdTable := r.URL.Query().Get("idTable")
 
-	idAction, err := strconv.Atoi(r.URL.Query().Get("idAction"))
+	if swName == "" || paramIdAction == "" || paramIdTable == "" {
+		errorMessage = "Failed to add entry: parameters 'switch', 'idAction' and 'idTable' are required"
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+		return
+	}
 
-	idTable, err := strconv.Atoi(r.URL.Query().Get("idTable"))
+	idAction, err := strconv.Atoi(paramIdAction)
+
+	idTable, err2 := strconv.Atoi(paramIdTable)
+
+	if err != nil || err2 != nil {
+		errorMessage = "Failed to add entry: idAction or idTable are not integer"
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+		return
+	}
+
+	sw := getSwitchByName(swName)
+	rule_descr := findActionByIdAndTable(sw, idAction, idTable)
+
+	if sw == nil || rule_descr == nil {
+		errorMessage = "Failed to add entry: switch not found or not found rule with specified idAction and idTable"
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+		return
+	}
 
 	if r.Method == "POST" {
 		if err := r.ParseForm(); err != nil {
-			fmt.Println("ParseForm() err:", err)
+			log.Error("ParseForm() err:", err)
 			return
 		}
 
@@ -132,24 +155,38 @@ func addRule(w http.ResponseWriter, r *http.Request) {
 		// 3) write a success/failure message on right variable
 		// 4) show index page by calling http.Redirect(w, r, "/", http.StatusSeeOther)
 
-		actualSwitch := getSwitchByName(sw)
-		rule_descr := findActionByIdAndTable(actualSwitch, idAction, idTable)
-
 		var inputKeys []p4switch.Key
 		var inputMask string
 		for idx, desc := range rule_descr.Keys {
 			if strings.ToUpper(desc.MatchType) == "TERNARY" {
 				inputMask = r.FormValue("mask" + strconv.Itoa(idx))
+				if inputMask == "" {
+					errorMessage = "Failed to add entry: expected mask for key number " + strconv.Itoa(idx) + " but not found"
+					http.Redirect(w, r, "/", http.StatusSeeOther)
+					return
+				}
+			}
+			actualValue := r.FormValue("key" + strconv.Itoa(idx))
+			if actualValue == "" {
+				errorMessage = "Failed to add entry: expected a value for key number " + strconv.Itoa(idx) + " but not found"
+				http.Redirect(w, r, "/", http.StatusSeeOther)
+				return
 			}
 			inputKeys = append(inputKeys, p4switch.Key{
-				Value: r.FormValue("key" + strconv.Itoa(idx)),
+				Value: actualValue,
 				Mask:  inputMask,
 			})
 		}
 
 		var inputParam []string
 		for idx := range rule_descr.ActionParams {
-			inputParam = append(inputParam, r.FormValue("par"+strconv.Itoa(idx)))
+			actualValue := r.FormValue("par" + strconv.Itoa(idx))
+			if actualValue == "" {
+				errorMessage = "Failed to add entry: expected a value for parameter number " + strconv.Itoa(idx) + " but not found"
+				http.Redirect(w, r, "/", http.StatusSeeOther)
+				return
+			}
+			inputParam = append(inputParam, actualValue)
 		}
 
 		rule := p4switch.Rule{
@@ -159,7 +196,7 @@ func addRule(w http.ResponseWriter, r *http.Request) {
 			ActionParam: inputParam,
 		}
 
-		res := actualSwitch.AddRule(rule)
+		res := sw.AddRule(rule)
 
 		if res != nil {
 			errorMessage = "Failed to add entry: " + res.Error()
@@ -171,11 +208,10 @@ func addRule(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if r.Method == "GET" {
-		actualSwitch := getSwitchByName(sw)
 
 		data := AddRulePageData{
-			SwitchName: sw,
-			Rule:       *findActionByIdAndTable(actualSwitch, idAction, idTable),
+			SwitchName: swName,
+			Rule:       *rule_descr,
 		}
 
 		tmpl := template.Must(template.ParseFiles(serverPath + "addRule.html"))
@@ -183,7 +219,7 @@ func addRule(w http.ResponseWriter, r *http.Request) {
 		err = tmpl.Execute(w, data)
 
 		if err != nil {
-			fmt.Println(err)
+			log.Error(err)
 		}
 	}
 }
@@ -191,9 +227,22 @@ func addRule(w http.ResponseWriter, r *http.Request) {
 func removeRule(w http.ResponseWriter, r *http.Request) {
 
 	swName := r.URL.Query().Get("switch")
+	paramNumRule := r.URL.Query().Get("number")
+
+	if swName == "" || paramNumRule == "" {
+		errorMessage = "Failed to delete entry: parameters 'number' and 'switch' are required"
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+		return
+	}
 
 	sw := getSwitchByName(swName)
-	numRule, _ := strconv.Atoi(r.URL.Query().Get("number"))
+	numRule, err := strconv.Atoi(paramNumRule)
+
+	if sw == nil || err != nil {
+		errorMessage = "Failed to delete entry: switch not found or number is not an integer"
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+		return
+	}
 
 	res := sw.RemoveRule(numRule)
 
@@ -217,7 +266,19 @@ func executeProgram(w http.ResponseWriter, r *http.Request) {
 
 	swName := r.URL.Query().Get("switch")
 
+	if program == "" || swName == "" {
+		errorMessage = "Cannot change configuration: parameters 'program' and 'switch' are required"
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+		return
+	}
+
 	sw := getSwitchByName(swName)
+
+	if sw == nil || !programValid(program) {
+		errorMessage = "Cannot change configuration: switch not found or program not valid"
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+		return
+	}
 
 	err := sw.ChangeConfig(&p4switch.SwitchConfig{
 		Program: program,
@@ -255,10 +316,22 @@ func getDescribersForSwitch(sw *p4switch.GrpcSwitch) []p4switch.RuleDescriber {
 }
 
 func findActionByIdAndTable(sw *p4switch.GrpcSwitch, idAction int, idTable int) *p4switch.RuleDescriber {
+	if sw == nil || idAction < 0 || idTable < 0 {
+		return nil
+	}
 	for _, action := range getDescribersForSwitch(sw) {
 		if action.ActionId == idAction && action.TableId == idTable {
 			return &action
 		}
 	}
 	return nil
+}
+
+func programValid(name string) bool {
+	for _, el := range programNames {
+		if el == name {
+			return true
+		}
+	}
+	return false
 }

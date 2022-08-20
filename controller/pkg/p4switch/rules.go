@@ -73,6 +73,10 @@ func (sw *GrpcSwitch) AddRule(rule Rule) error {
 
 // Removes the rule at index "idx" from the switch, both from the array containg the installed rules and from the switch sw
 func (sw *GrpcSwitch) RemoveRule(idx int) error {
+	if idx < 0 || idx >= len(sw.config.Rules) {
+		return fmt.Errorf("index not valid")
+	}
+
 	entry, err := CreateTableEntry(sw, sw.config.Rules[idx])
 	if err != nil {
 		return err
