@@ -243,7 +243,8 @@ var infoParsed map[string]string
 
 // Return JSON of []RuleDescriber
 func ParseP4Info(sw *GrpcSwitch) *string {
-	// TODO add comments
+
+	// check if already parsed p4Info of program actually in switch, then return it, if not parse it and save in map
 	if infoParsed == nil {
 		infoParsed = make(map[string]string)
 	}
@@ -258,30 +259,35 @@ func ParseP4Info(sw *GrpcSwitch) *string {
 
 	actions := sw.p4RtC.GetActions()
 	tables := sw.p4RtC.GetTables()
+
 	for _, table := range tables {
 		for _, action := range actions {
 
+			// For every table, check all actions to find the ones associated to the table, then add it to result
 			if containsAction(table, int(action.Preamble.Id)) {
 
+				// Extract keys
 				keys := []FieldDescriber{}
 				for _, matchField := range table.MatchFields {
 					keys = append(keys, FieldDescriber{
 						Name:      matchField.Name,
 						Bitwidth:  int(matchField.Bitwidth),
 						MatchType: getMatchTypeOf(matchField),
-						Pattern:   findIfKnownPattern(matchField.Name, int(matchField.Bitwidth)),
+						Pattern:   findIfKnownPattern(matchField.Name, int(matchField.Bitwidth)), // N.B: function findIfKnownPattern
 					})
 				}
 
+				// Extract keys
 				params := []FieldDescriber{}
 				for _, param := range action.Params {
 					params = append(params, FieldDescriber{
 						Name:     param.Name,
 						Bitwidth: int(param.Bitwidth),
-						Pattern:  findIfKnownPattern(param.Name, int(param.Bitwidth)),
+						Pattern:  findIfKnownPattern(param.Name, int(param.Bitwidth)), // N.B: function findIfKnownPattern
 					})
 				}
 
+				// Add to result
 				result = append(result, RuleDescriber{
 					TableName:    table.Preamble.Name,
 					TableId:      int(table.Preamble.Id),
@@ -304,6 +310,7 @@ func ParseP4Info(sw *GrpcSwitch) *string {
 	return &res
 }
 
+// Util function, return string representing the matchType
 func getMatchTypeOf(field *v1.MatchField) string {
 	switch field.GetMatchType() {
 	case v1.MatchField_EXACT:

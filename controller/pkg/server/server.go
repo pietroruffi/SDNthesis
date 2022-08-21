@@ -82,6 +82,8 @@ func getRoot(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}
+
+	// Create variable for the rootPage
 	var swData []SwitchServerData
 
 	for _, sw := range allSwitches {
@@ -100,6 +102,7 @@ func getRoot(w http.ResponseWriter, r *http.Request) {
 		ErrorMessage:   errorMessage,
 	}
 
+	// compile template
 	tmpl := template.Must(template.ParseFiles(serverPath + "index.html"))
 
 	err := tmpl.Execute(w, data)
@@ -114,6 +117,7 @@ func getRoot(w http.ResponseWriter, r *http.Request) {
 
 func addRule(w http.ResponseWriter, r *http.Request) {
 
+	// read parameters from GET request and check validity
 	swName := r.URL.Query().Get("switch")
 	paramIdAction := r.URL.Query().Get("idAction")
 	paramIdTable := r.URL.Query().Get("idTable")
@@ -144,6 +148,8 @@ func addRule(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if r.Method == "POST" {
+		// if POST, this is a request for adding a new rule in switch sw
+
 		if err := r.ParseForm(); err != nil {
 			log.Error("ParseForm() err:", err)
 			return
@@ -155,6 +161,7 @@ func addRule(w http.ResponseWriter, r *http.Request) {
 		// 3) write a success/failure message on right variable
 		// 4) show index page by calling http.Redirect(w, r, "/", http.StatusSeeOther)
 
+		// Extract values of keys from POST and handle errors if one isn't present
 		var inputKeys []p4switch.Key
 		var inputMask string
 		for idx, desc := range rule_descr.Keys {
@@ -178,6 +185,7 @@ func addRule(w http.ResponseWriter, r *http.Request) {
 			})
 		}
 
+		// Extract values of actionParameters from POST and handle errors if one isn't present
 		var inputParam []string
 		for idx := range rule_descr.ActionParams {
 			actualValue := r.FormValue("par" + strconv.Itoa(idx))
@@ -189,6 +197,7 @@ func addRule(w http.ResponseWriter, r *http.Request) {
 			inputParam = append(inputParam, actualValue)
 		}
 
+		// Create the rule
 		rule := p4switch.Rule{
 			Table:       rule_descr.TableName,
 			Keys:        inputKeys,
@@ -196,6 +205,7 @@ func addRule(w http.ResponseWriter, r *http.Request) {
 			ActionParam: inputParam,
 		}
 
+		// Add the rule to switch sw and write success/failure message
 		res := sw.AddRule(rule)
 
 		if res != nil {
@@ -204,10 +214,13 @@ func addRule(w http.ResponseWriter, r *http.Request) {
 			successMessage = "Entry added with success"
 		}
 
+		// Show root page
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 	}
 
 	if r.Method == "GET" {
+
+		// if GET, this is a request for the page which allows add a new rule
 
 		data := AddRulePageData{
 			SwitchName: swName,
@@ -225,6 +238,8 @@ func addRule(w http.ResponseWriter, r *http.Request) {
 }
 
 func removeRule(w http.ResponseWriter, r *http.Request) {
+
+	// read parameters from GET request and check validity
 
 	swName := r.URL.Query().Get("switch")
 	paramNumRule := r.URL.Query().Get("number")
@@ -244,6 +259,7 @@ func removeRule(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Remove the rule from switch SW and write success/failure message
 	res := sw.RemoveRule(numRule)
 
 	if res != nil {
@@ -252,16 +268,20 @@ func removeRule(w http.ResponseWriter, r *http.Request) {
 		successMessage = "Entry deleted with success"
 	}
 
+	// Show root page
 	http.Redirect(w, r, "/", http.StatusSeeOther)
 
 }
 
 func executeProgram(w http.ResponseWriter, r *http.Request) {
 
-	// 1) change program in execution on switch
-	// 2) write a success/failure message on right variable
-	// 3) show index page by calling http.Redirect(w, r, "/", http.StatusSeeOther)
+	// To handle this request:
+	// 1) extract parameters from GET request
+	// 2) change program in execution on switch
+	// 3) write a success/failure message on right variable
+	// 4) show index page by calling http.Redirect(w, r, "/", http.StatusSeeOther)
 
+	// read parameters from GET request and check validity
 	program := r.URL.Query().Get("program")
 
 	swName := r.URL.Query().Get("switch")
@@ -280,6 +300,7 @@ func executeProgram(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// change configuration of switch sw (in our case the new one has no digest or rules) and write success/failure message
 	err := sw.ChangeConfig(&p4switch.SwitchConfig{
 		Program: program,
 		Digest:  []string{},
@@ -292,6 +313,7 @@ func executeProgram(w http.ResponseWriter, r *http.Request) {
 		successMessage = "Config updated to " + program
 	}
 
+	// show root page
 	http.Redirect(w, r, "/", http.StatusSeeOther)
 
 }
@@ -305,16 +327,6 @@ func getSwitchByName(name string) *p4switch.GrpcSwitch {
 	return nil
 }
 
-func getDescribersForSwitch(sw *p4switch.GrpcSwitch) []p4switch.RuleDescriber {
-	res := *p4switch.ParseP4Info(sw)
-
-	var describers []p4switch.RuleDescriber
-
-	json.Unmarshal([]byte(res), &describers)
-
-	return describers
-}
-
 func findActionByIdAndTable(sw *p4switch.GrpcSwitch, idAction int, idTable int) *p4switch.RuleDescriber {
 	if sw == nil || idAction < 0 || idTable < 0 {
 		return nil
@@ -325,6 +337,16 @@ func findActionByIdAndTable(sw *p4switch.GrpcSwitch, idAction int, idTable int) 
 		}
 	}
 	return nil
+}
+
+func getDescribersForSwitch(sw *p4switch.GrpcSwitch) []p4switch.RuleDescriber {
+	res := *p4switch.ParseP4Info(sw)
+
+	var describers []p4switch.RuleDescriber
+
+	json.Unmarshal([]byte(res), &describers)
+
+	return describers
 }
 
 func programValid(name string) bool {
