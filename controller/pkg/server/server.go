@@ -33,6 +33,11 @@ type AddRulePageData struct {
 	Rule       p4switch.RuleDescriber
 }
 
+type TopologyJSONData struct {
+	Nodes []NodeTopologyData `json:"nodes"`
+	Edges []EdgeTopologyData `json:"edges"`
+}
+
 const (
 	pathP4folder = "../p4/"
 	serverPath   = "./pkg/server/"
@@ -51,6 +56,8 @@ func StartServer(switches []*p4switch.GrpcSwitch) {
 	http.HandleFunc("/addRule", addRule)
 	http.HandleFunc("/removeRule", removeRule)
 	http.HandleFunc("/executeProgram", executeProgram)
+	http.HandleFunc("/topology", getTopology)
+	http.HandleFunc("/getTopologyData", getTopologyData)
 
 	http.Handle("/web/", http.StripPrefix("/web/", http.FileServer(http.Dir(serverPath+"web"))))
 
@@ -113,6 +120,66 @@ func getRoot(w http.ResponseWriter, r *http.Request) {
 
 	successMessage = ""
 	errorMessage = ""
+}
+
+func getTopology(w http.ResponseWriter, r *http.Request) {
+
+	tmpl := template.Must(template.ParseFiles(serverPath + "topology.html"))
+
+	err := tmpl.Execute(w, nil)
+
+	if err != nil {
+		log.Errorf(err.Error())
+	}
+}
+
+type NodeTopologyData struct {
+	Id    int    `json:"id"`
+	Label string `json:"label"`
+	Group string `json:"group"`
+}
+type EdgeTopologyData struct {
+	From int `json:"from"`
+	To   int `json:"to"`
+}
+
+func getTopologyData(w http.ResponseWriter, r *http.Request) {
+	// TODO be dinamic
+	var nodes []NodeTopologyData
+	var i int
+	for i = 1; i <= 4; i++ {
+		nodes = append(nodes, NodeTopologyData{
+			Id:    i,
+			Label: "switch s" + strconv.Itoa(i),
+			Group: "switches",
+		})
+	}
+	var edges []EdgeTopologyData
+	edges = append(edges, EdgeTopologyData{
+		From: 1,
+		To:   2,
+	})
+	edges = append(edges, EdgeTopologyData{
+		From: 2,
+		To:   3,
+	})
+	edges = append(edges, EdgeTopologyData{
+		From: 3,
+		To:   4,
+	})
+	edges = append(edges, EdgeTopologyData{
+		From: 1,
+		To:   4,
+	})
+
+	data := TopologyJSONData{
+		Nodes: nodes,
+		Edges: edges,
+	}
+	jsonResult, _ := json.Marshal(data)
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(jsonResult)
 }
 
 func addRule(w http.ResponseWriter, r *http.Request) {
