@@ -61,3 +61,13 @@ func (c *Client) counterId(name string) uint32 {
 	}
 	return counter.Preamble.Id
 }
+
+// Added
+
+func (c *Client) GetActions() []*p4_config_v1.Action {
+	return c.p4Info.Actions
+}
+
+func (c *Client) GetTables() []*p4_config_v1.Table {
+	return c.p4Info.Tables
+}

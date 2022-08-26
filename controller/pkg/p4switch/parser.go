@@ -5,11 +5,10 @@ import (
 	"controller/pkg/util/conversion"
 	"encoding/hex"
 	"encoding/json"
-	"io/ioutil"
-	"os"
 	"strconv"
 	"strings"
 
+	v1 "github.com/p4lang/p4runtime/go/p4/config/v1"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -22,19 +21,12 @@ const (
 	extJsonInfo  = ".p4.p4info.json"
 )
 
-// ActionDescr used in parseP4Info() to keep all fields of an action together, and not in different arrays where elements related have same index
-type ActionDescr struct {
-	ActionName   string
-	ActionId     int
-	ActionParams []FieldDescriber
-}
-
-// Define general parser for MatchInterfaces
-type ParserMatchInterface interface {
+// Define general parser for Keys
+type ParserKeys interface {
 	parse(key Key, describer FieldDescriber) client.MatchInterface
 }
 
-// Specific parser for MatchInterfaces with matchType: "exact"
+// Specific parser for Keys with matchType: "exact"
 type ExactMatchParser struct {
 }
 
@@ -84,7 +76,7 @@ func (p *ExactMatchParser) parse(key Key, describer FieldDescriber) client.Match
 	})
 }
 
-// Specific parser for MatchInterfaces with matchType: "lpm"
+// Specific parser for Keys with matchType: "lpm"
 type LpmMatchParser struct {
 }
 
@@ -124,7 +116,7 @@ func (p *LpmMatchParser) parse(key Key, describer FieldDescriber) client.MatchIn
 	})
 }
 
-// Specific parser for MatchInterfaces with matchType: "ternary"
+// Specific parser for Keys with matchType: "ternary"
 type TernaryMatchParser struct{}
 
 func (p *TernaryMatchParser) parse(key Key, describer FieldDescriber) client.MatchInterface {
@@ -172,15 +164,15 @@ func (p *TernaryMatchParser) parse(key Key, describer FieldDescriber) client.Mat
 
 // A kind of "ParserFactory", returns the parser for the specified matchType (exact | lpm | ternary)
 
-func getParserForMatchInterface(parserType string) ParserMatchInterface {
+func getParserForKeys(parserType string) ParserKeys {
 
 	switch strings.ToUpper(parserType) {
 	case "EXACT":
-		return ParserMatchInterface(&ExactMatchParser{})
+		return ParserKeys(&ExactMatchParser{})
 	case "LPM":
-		return ParserMatchInterface(&LpmMatchParser{})
+		return ParserKeys(&LpmMatchParser{})
 	case "TERNARY":
-		return ParserMatchInterface(&TernaryMatchParser{})
+		return ParserKeys(&TernaryMatchParser{})
 	default:
 		return nil
 	}
@@ -247,113 +239,62 @@ func getParserForActionParams(parserType string) ParserActionParams {
 	return ParserActionParams(&DefaultParserActionParams{})
 }
 
+var infoParsed map[string]string
+
 // Return JSON of []RuleDescriber
-func ParseP4Info(p4Program string) *string {
+func ParseP4Info(sw *GrpcSwitch) *string {
 
-	filename := pathJsonInfo + p4Program + extJsonInfo
-
-	jsonFile, err := os.Open(filename)
-
-	if err != nil {
-		log.Errorf("%v", err)
-		return nil
+	// check if already parsed p4Info of program actually in switch, then return it, if not parse it and save in map
+	if infoParsed == nil {
+		infoParsed = make(map[string]string)
 	}
-
-	defer jsonFile.Close()
-
-	byteValue, _ := ioutil.ReadAll(jsonFile)
-
-	var jsonResult map[string]interface{}
-
-	json.Unmarshal([]byte(byteValue), &jsonResult)
+	info := infoParsed[sw.GetProgramName()]
+	if info != "" {
+		return &info
+	}
 
 	// Define result variable
 
 	var result []RuleDescriber
 
-	// Extract actions informations
+	actions := sw.p4RtC.GetActions()
+	tables := sw.p4RtC.GetTables()
 
-	var actions_descr []ActionDescr
+	for _, table := range tables {
+		for _, action := range actions {
 
-	for index_actions := range jsonResult["actions"].([]interface{}) {
+			// For every table, check all actions to find the ones associated to the table, then add it to result
+			if containsAction(table, int(action.Preamble.Id)) {
 
-		action := (jsonResult["actions"].([]interface{})[index_actions]).(map[string]interface{})
+				// Extract keys
+				keys := []FieldDescriber{}
+				for _, matchField := range table.MatchFields {
+					keys = append(keys, FieldDescriber{
+						Name:      matchField.Name,
+						Bitwidth:  int(matchField.Bitwidth),
+						MatchType: getMatchTypeOf(matchField),
+						Pattern:   findIfKnownPattern(matchField.Name, int(matchField.Bitwidth)), // N.B: function findIfKnownPattern
+					})
+				}
 
-		preamble := action["preamble"].(map[string]interface{})
-		action_name := preamble["name"].(string)
-		action_id := int(preamble["id"].(float64))
+				// Extract keys
+				params := []FieldDescriber{}
+				for _, param := range action.Params {
+					params = append(params, FieldDescriber{
+						Name:     param.Name,
+						Bitwidth: int(param.Bitwidth),
+						Pattern:  findIfKnownPattern(param.Name, int(param.Bitwidth)), // N.B: function findIfKnownPattern
+					})
+				}
 
-		action_parameters := []FieldDescriber{}
-
-		// If there are some ActionParams, extract them
-
-		if action["params"] != nil {
-			for index_parameters := range action["params"].([]interface{}) {
-				parameter := action["params"].([]interface{})[index_parameters].(map[string]interface{})
-
-				action_parameters = append(action_parameters, FieldDescriber{
-					Name:     parameter["name"].(string),
-					Bitwidth: int(parameter["bitwidth"].(float64)),
-					Pattern:  findIfKnownPattern(parameter["name"].(string), int(parameter["bitwidth"].(float64))),
-				})
-			}
-		}
-
-		actions_descr = append(actions_descr, ActionDescr{
-			ActionName:   action_name,
-			ActionId:     action_id,
-			ActionParams: action_parameters,
-		})
-
-	}
-
-	// Extract tables informations
-
-	for i := range jsonResult["tables"].([]interface{}) {
-
-		table := jsonResult["tables"].([]interface{})[i].(map[string]interface{})
-
-		preamble := table["preamble"].(map[string]interface{})
-		table_name := preamble["name"].(string)
-		table_id := int(preamble["id"].(float64))
-
-		var talbe_keys []FieldDescriber
-
-		// Extract keys
-
-		for index_keys := range table["matchFields"].([]interface{}) {
-
-			key := table["matchFields"].([]interface{})[index_keys].(map[string]interface{})
-
-			talbe_keys = append(talbe_keys, FieldDescriber{
-				Name:      key["name"].(string),
-				Bitwidth:  int(key["bitwidth"].(float64)),
-				MatchType: strings.ToUpper(key["matchType"].(string)),
-				Pattern:   findIfKnownPattern(key["name"].(string), int(key["bitwidth"].(float64))),
-			})
-		}
-
-		// Extract IDs of actions the actual table offers
-
-		var actions_ids []int
-		for _, action_refs := range table["actionRefs"].([]interface{}) {
-			actions_ids = append(actions_ids, int(action_refs.(map[string]interface{})["id"].(float64)))
-		}
-
-		// find actions contained in actual table and then create a new describer
-		// if a table has no action or an action doesn't refer to a table, them won't be added to result
-
-		for _, ac := range actions_descr {
-
-			if contains_int(actions_ids, ac.ActionId) {
-
+				// Add to result
 				result = append(result, RuleDescriber{
-					TableName:    table_name,
-					TableId:      table_id,
-					Keys:         talbe_keys,
-					ActionName:   ac.ActionName,
-					ActionId:     ac.ActionId,
-					ActionParams: ac.ActionParams,
+					TableName:    table.Preamble.Name,
+					TableId:      int(table.Preamble.Id),
+					Keys:         keys,
+					ActionName:   action.Preamble.Name,
+					ActionId:     int(action.Preamble.Id),
+					ActionParams: params,
 				})
 			}
 		}
@@ -364,14 +305,35 @@ func ParseP4Info(p4Program string) *string {
 		return nil
 	}
 	res := string(resInByte)
+	infoParsed[sw.GetProgramName()] = res
 
 	return &res
 }
 
-// Returns a describer for an already defined rule, basing the research on ActionName and TableName
-func getDescriberFor(p4Program string, rule Rule) *RuleDescriber {
+// Util function, return string representing the matchType
+func getMatchTypeOf(field *v1.MatchField) string {
+	switch field.GetMatchType() {
+	case v1.MatchField_EXACT:
+		return "EXACT"
+	case v1.MatchField_LPM:
+		return "LPM"
+	case v1.MatchField_TERNARY:
+		return "TERNARY"
+	case v1.MatchField_RANGE:
+		return "RANGE"
+	case v1.MatchField_OPTIONAL:
+		return "OPTIONAL"
+	case v1.MatchField_UNSPECIFIED:
+		return "UNSPECIFIED"
+	default:
+		return ""
+	}
+}
 
-	res := *ParseP4Info(p4Program)
+// Returns a describer for an already defined rule, basing the research on ActionName and TableName
+func getDescriberFor(sw *GrpcSwitch, rule Rule) *RuleDescriber {
+
+	res := *ParseP4Info(sw)
 
 	var describers []RuleDescriber
 
@@ -402,12 +364,14 @@ func findIfKnownPattern(name string, bitwidth int) string {
 	return ""
 }
 
-// Util function, check if an array of integer contains a value
-func contains_int(array []int, value int) bool {
-	for _, el := range array {
-		if el == value {
+// Util function
+func containsAction(table *v1.Table, actionId int) bool {
+
+	for _, ref := range table.ActionRefs {
+		if ref.Id == uint32(actionId) {
 			return true
 		}
 	}
+
 	return false
 }
