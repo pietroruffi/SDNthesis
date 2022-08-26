@@ -39,8 +39,9 @@ type TopologyJSONData struct {
 }
 
 const (
-	pathP4folder = "../p4/"
-	serverPath   = "./pkg/server/"
+	pathP4folder       = "../p4/"
+	pathTopologyFolder = "../config/"
+	serverPath         = "./pkg/server/"
 )
 
 var errorMessage string
@@ -144,33 +145,51 @@ type EdgeTopologyData struct {
 }
 
 func getTopologyData(w http.ResponseWriter, r *http.Request) {
-	// TODO be dinamic
+
 	var nodes []NodeTopologyData
-	var i int
-	for i = 1; i <= 4; i++ {
+	nodesMap := make(map[string]int)
+
+	fileData, err := ioutil.ReadFile(pathTopologyFolder + "singlesw-topo.json")
+	if err != nil {
+		errorMessage = "Failed to open topology file!"
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+		return
+	}
+	var topo map[string]interface{}
+	json.Unmarshal(fileData, &topo)
+
+	i := 1
+	for hostName := range topo["hosts"].(map[string]interface{}) {
+
 		nodes = append(nodes, NodeTopologyData{
 			Id:    i,
-			Label: "switch s" + strconv.Itoa(i),
+			Label: "Host " + hostName,
+			Group: "hosts",
+		})
+		nodesMap[hostName] = i
+		i++
+	}
+
+	for _, switchName := range topo["switches"].([]interface{}) {
+		nodes = append(nodes, NodeTopologyData{
+			Id:    i,
+			Label: "Switch " + switchName.(string),
 			Group: "switches",
 		})
+		nodesMap[switchName.(string)] = i
+		i++
 	}
 	var edges []EdgeTopologyData
-	edges = append(edges, EdgeTopologyData{
-		From: 1,
-		To:   2,
-	})
-	edges = append(edges, EdgeTopologyData{
-		From: 2,
-		To:   3,
-	})
-	edges = append(edges, EdgeTopologyData{
-		From: 3,
-		To:   4,
-	})
-	edges = append(edges, EdgeTopologyData{
-		From: 1,
-		To:   4,
-	})
+	for _, val := range topo["links"].([]interface{}) {
+		links := val.([]interface{})
+
+		from := strings.Split(links[0].(string), "-")[0]
+		to := strings.Split(links[1].(string), "-")[0]
+		edges = append(edges, EdgeTopologyData{
+			From: nodesMap[from],
+			To:   nodesMap[to],
+		})
+	}
 
 	data := TopologyJSONData{
 		Nodes: nodes,

@@ -4,7 +4,7 @@
 <head>
     <meta charset='utf-8'>
     <meta name='viewport' content='width=device-width, initial-scale=1'>
-    <title>Parser switch P4</title>
+    <title>Network controller</title>
     <link href='./web/css/bootstrap/bootstrap.min.css' rel='stylesheet'>
     <script src='./web/js/bootstrap/bootstrap.bundle.min.js'></script>
 </head>
@@ -32,6 +32,7 @@
                             Topology
                         </a>
                     </li>
+                    <!--
                     <li class='nav-item dropdown'>
                         <a class='nav-link dropdown-toggle' href='#' id='navbarDropdown' role='button'
                             data-bs-toggle='dropdown' aria-expanded='false'>
@@ -46,6 +47,7 @@
                             <li><a class='dropdown-item' href='#'>Something else here</a></li>
                         </ul>
                     </li>
+                    -->
                 </ul>
             </div>
         </div>
@@ -148,7 +150,7 @@
                 <!-- Finisce la parte da ripetere per ogni switch -->
             </div>
 
-            <div class='col-12 col-sm-6 col-lg-4 col-xl-5 justify-content-center align-items-center'>
+            <div class='col-12 col-sm-6 col-lg-4 col-xl-5 mt-5 mt-lg-0 justify-content-center align-items-center'>
                 <h2 class='mb-3'>Installed Rules</h2>
                 <!-- Ripeti la parte sottostante per ogni switch -->
                 {{ range $switch := .Switches }}
