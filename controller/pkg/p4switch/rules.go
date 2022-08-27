@@ -60,7 +60,9 @@ func (sw *GrpcSwitch) AddRule(rule Rule) error {
 		return err
 	}
 
-	sw.AddTableEntry(entry)
+	if err := sw.AddTableEntry(entry); err != nil {
+		return err
+	}
 
 	config, err := sw.GetConfig()
 	if err != nil {
@@ -77,12 +79,16 @@ func (sw *GrpcSwitch) RemoveRule(idx int) error {
 		return fmt.Errorf("index not valid")
 	}
 
+	// if ask for remove an entry, documentation says that only keys will be considered (ActionParams or other fields will not)
+	// so maybe should define a method that not parse ActionParams, is all work not needed
 	entry, err := CreateTableEntry(sw, sw.config.Rules[idx])
 	if err != nil {
 		return err
 	}
 
-	sw.RemoveTableEntry(entry)
+	if err := sw.RemoveTableEntry(entry); err != nil {
+		return err
+	}
 
 	config, err := sw.GetConfig()
 	if err != nil {
@@ -118,19 +124,19 @@ func CreateTableEntry(sw *GrpcSwitch, rule Rule) (*p4_v1.TableEntry, error) {
 
 	descr := getDescriberFor(sw, rule)
 	if descr == nil {
-		return nil, fmt.Errorf("Error getting describer for rule %+v", rule)
+		return nil, fmt.Errorf("Error getting describer for rule, see log for more info")
 	}
 	rule.Describer = descr
 
 	interfaces := parseKeys(rule.Keys, rule.Describer.Keys)
 	if interfaces == nil {
-		return nil, fmt.Errorf("Error parsing keys of rule %+v", rule)
+		return nil, fmt.Errorf("Error parsing keys of rule, see log for more info")
 	}
 
 	parserActParam := getParserForActionParams("default")
 	actionParams := parserActParam.parse(rule.ActionParam, rule.Describer.ActionParams)
 	if actionParams == nil {
-		return nil, fmt.Errorf("Error parsing action parameters of rule %+v", rule)
+		return nil, fmt.Errorf("Error parsing action parameters of rule, see log for more info")
 	}
 
 	return sw.p4RtC.NewTableEntry(

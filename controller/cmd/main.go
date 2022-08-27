@@ -33,15 +33,12 @@ func main() {
 	flag.BoolVar(&trace, "trace", false, "Enable trace mode with log messages")
 	var configName string
 	flag.StringVar(&configName, "config", "../config/config.json", "Program name")
-	var configNameAlt string
-	flag.StringVar(&configNameAlt, "config-alt", "", "Alternative config name")
+	var topologyName string
+	flag.StringVar(&topologyName, "topology", "", "Topology name")
 	var certFile string
 	flag.StringVar(&certFile, "cert-file", "", "Certificate file for tls")
 	flag.Parse()
 
-	if configNameAlt == "" {
-		configNameAlt = configName
-	}
 	if verbose {
 		log.SetLevel(log.DebugLevel)
 	}
@@ -71,6 +68,6 @@ func main() {
 		return
 	}
 
-	server.StartServer(switchs)
+	server.StartServer(switchs, topologyName)
 	cancel()
 }

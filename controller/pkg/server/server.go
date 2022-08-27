@@ -39,9 +39,8 @@ type TopologyJSONData struct {
 }
 
 const (
-	pathP4folder       = "../p4/"
-	pathTopologyFolder = "../config/"
-	serverPath         = "./pkg/server/"
+	pathP4folder = "../p4/"
+	serverPath   = "./pkg/server/"
 )
 
 var errorMessage string
@@ -49,9 +48,11 @@ var successMessage string
 
 var allSwitches []*p4switch.GrpcSwitch
 var programNames []string
+var topologyFilePath string
 
-func StartServer(switches []*p4switch.GrpcSwitch) {
+func StartServer(switches []*p4switch.GrpcSwitch, topology string) {
 	allSwitches = switches
+	topologyFilePath = topology
 
 	http.HandleFunc("/", getRoot)
 	http.HandleFunc("/addRule", addRule)
@@ -149,7 +150,7 @@ func getTopologyData(w http.ResponseWriter, r *http.Request) {
 	var nodes []NodeTopologyData
 	nodesMap := make(map[string]int)
 
-	fileData, err := ioutil.ReadFile(pathTopologyFolder + "singlesw-topo.json")
+	fileData, err := ioutil.ReadFile(topologyFilePath)
 	if err != nil {
 		errorMessage = "Failed to open topology file!"
 		http.Redirect(w, r, "/", http.StatusSeeOther)
@@ -171,10 +172,19 @@ func getTopologyData(w http.ResponseWriter, r *http.Request) {
 	}
 
 	for _, switchName := range topo["switches"].([]interface{}) {
+		sw := getSwitchByName(switchName.(string))
+		group := "switches"
+		label := "Switch " + switchName.(string)
+
+		if sw == nil || !sw.IsReachable() {
+			group = "switchesUnavailable"
+			label = label + "\nUNAVAILABLE"
+		}
+
 		nodes = append(nodes, NodeTopologyData{
 			Id:    i,
-			Label: "Switch " + switchName.(string),
-			Group: "switches",
+			Label: label,
+			Group: group,
 		})
 		nodesMap[switchName.(string)] = i
 		i++

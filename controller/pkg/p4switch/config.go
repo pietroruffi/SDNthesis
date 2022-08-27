@@ -1,6 +1,7 @@
 package p4switch
 
 import (
+	"controller/pkg/client"
 	"fmt"
 	"io/ioutil"
 	"time"
@@ -136,4 +137,10 @@ func (sw *GrpcSwitch) readBin() []byte {
 	p4Bin := p4Path + sw.GetProgramName() + p4BinExt
 	sw.log.Tracef("p4Bin %s", p4Bin)
 	return readFileBytes(p4Bin)
+}
+
+// This metod send a GetForwardingPipelineConfig to switch SW and check the response, if no error is thrown means that switch is reachable
+func (sw *GrpcSwitch) IsReachable() bool {
+	_, err := sw.p4RtC.GetFwdPipe(client.GetFwdPipeCookieOnly)
+	return err == nil
 }
