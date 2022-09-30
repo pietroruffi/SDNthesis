@@ -1,3 +1,25 @@
+This repository includes the work i made for my Bachelor Thesis, i.e. implementing of new functionalities in SDN controller defined by Unibo Laboratory of Information and System SEcurity (ULISSe)
+
+# How to run
+
+1) Start mininet
+```
+make topo
+```
+
+2) Start controller (in another terminal)
+```
+make ctrl
+```
+
+3) Use a web browser and connect to `localhost:3333`
+
+## Troubleshooting
+
+minet will read the .p4 file and create files needed by controller (like the p4info.txt) only for the .p4 program specified in Makefile of mininet folder `p4program = ..`
+
+So you have to execute the `make topo` command specifing every time a different p4 program, once for every program you have in p4 folder, to let mininet create all utility files.
+
 # Parser P4
 
 There are two different types of fields, which have to be parsed in different ways: Keys and Action_Parameters, in order to do this we defined some util functions:
